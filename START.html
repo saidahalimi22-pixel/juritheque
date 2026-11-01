@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ابدأ هنا | Jurithèque</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: linear-gradient(160deg, #0A2540 0%, #1E3A5F 50%, #0A2540 100%);
+      min-height: 100vh;
+      color: #fff;
+      direction: rtl;
+      padding: 24px 16px 48px;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    .logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .logo-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, #C9A84C, #A88B2E);
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #0A2540;
+      margin-bottom: 12px;
+    }
+    h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    .sub { opacity: 0.85; margin-bottom: 28px; line-height: 1.6; }
+    .note {
+      background: rgba(201,168,76,0.15);
+      border: 1px solid rgba(201,168,76,0.4);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 28px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #E8D48B;
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+    a.card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 14px;
+      padding: 18px 20px;
+      text-decoration: none;
+      color: #fff;
+      transition: 0.2s;
+    }
+    a.card:hover, a.card:active {
+      background: rgba(201,168,76,0.2);
+      border-color: #C9A84C;
+      transform: translateY(-2px);
+    }
+    .icon {
+      width: 48px; height: 48px;
+      background: #C9A84C;
+      color: #0A2540;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      font-weight: bold;
+    }
+    .card h2 { font-size: 1.15rem; margin-bottom: 4px; }
+    .card p { font-size: 0.85rem; opacity: 0.75; }
+    .arrow { margin-right: auto; font-size: 1.2rem; color: #C9A84C; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">
+      <div class="logo-icon">J</div>
+      <h1>Jurithèque</h1>
+      <p class="sub">منصة قانونية للمعاينة والتجربة</p>
+    </div>
+
+    <div class="note">
+      <strong>هذه نسخة معاينة</strong> تعمل بدون إنترنت وبدون Docker.<br>
+      اضغط على أي قسم بالأسفل للدخول إليه مباشرة.<br>
+      (لوحة التحكم الحقيقية والإضافة تحتاج نشراً على خادم لاحقاً)
+    </div>
+
+    <div class="grid">
+      <a class="card" href="index.html">
+        <div class="icon">🏠</div>
+        <div>
+          <h2>الصفحة الرئيسية</h2>
+          <p>نظرة عامة على المنصة</p>
+        </div>
+        <span class="arrow">←</span>
+      </a>
+
+      <a class="card" href="bibliotheque.html">
+        <div class="icon">📚</div>
+        <div>
+          <h2>المكتبة القانونية</h2>
+          <p>قوانين • كتب • رسائل • مقالات</p>
+        </div>
+        <span class="arrow">←</span>
+      </a>
+
+      <a class="card" href="jurisprudence.html">
+        <div class="icon">⚖️</div>
+        <div>
+          <h2>الاجتهادات القضائية</h2>
+          <p>أحكام وقرارات المحاكم</p>
+        </div>
+        <span class="arrow">←</span>
+      </a>
+
+      <a class="card" href="formations.html">
+        <div class="icon">🎓</div>
+        <div>
+          <h2>المحاضرات والتكوينات</h2>
+          <p>دورات ومحاضرات قانونية</p>
+        </div>
+        <span class="arrow">←</span>
+      </a>
+
+      <a class="card" href="annonces.html">
+        <div class="icon">📢</div>
+        <div>
+          <h2>الإعلانات</h2>
+          <p>مسابقات • توظيف • ندوات</p>
+        </div>
+        <span class="arrow">←</span>
+      </a>
+
+      <a class="card" href="assistant.html">
+        <div class="icon">🤖</div>
+        <div>
+          <h2>المساعد القانوني الذكي</h2>
+          <p>جرّب واجهة الدردشة (نسخة تجريبية محلية)</p>
+        </div>
+        <span class="arrow">←</span>
+      </a>
+
+      <a class="card" href="search.html">
+        <div class="icon">🔍</div>
+        <div>
+          <h2>البحث المتقدم</h2>
+          <p>واجهة البحث مع الفلاتر</p>
+        </div>
+        <span class="arrow">←</span>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

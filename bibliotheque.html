@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المكتبة القانونية | Jurithèque</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-top">
+      <div class="container">
+        <span>منصة قانونية موثوقة ومتخصصة</span>
+        <div>
+          <a href="assistant.html"><i class="fas fa-robot"></i> المساعد الذكي</a>
+        </div>
+      </div>
+    </div>
+    <div class="header-main">
+      <div class="container">
+        <a href="index.html" class="logo">
+          <div class="logo-icon">J</div>
+          Jurithèque
+        </a>
+        <nav class="nav">
+          <a href="index.html">الرئيسية</a>
+          <a href="bibliotheque.html" class="active">المكتبة القانونية</a>
+          <a href="jurisprudence.html">الاجتهادات القضائية</a>
+          <a href="formations.html">المحاضرات والتكوينات</a>
+          <a href="annonces.html">الإعلانات</a>
+          <a href="assistant.html">المساعد الذكي</a>
+        </nav>
+        <div class="search-box">
+          <input type="text" placeholder="ابحث في المكتبة...">
+          <button type="button"><i class="fas fa-search"></i></button>
+        </div>
+        <button class="mobile-toggle"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>المكتبة القانونية</h1>
+      <p>مدونة القوانين • الكتب • الرسائل والأطروحات • المقالات • التقارير</p>
+      <div class="breadcrumb">
+        <a href="index.html">الرئيسية</a>
+        <span>/</span>
+        <span>المكتبة القانونية</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="container">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="lois">مدونة القوانين</button>
+        <button class="tab-btn" data-tab="livres">الكتب</button>
+        <button class="tab-btn" data-tab="theses">الرسائل والأطروحات</button>
+        <button class="tab-btn" data-tab="articles">المقالات</button>
+        <button class="tab-btn" data-tab="rapports">التقارير</button>
+      </div>
+
+      <!-- Lois -->
+      <div id="lois" class="tab-content active">
+        <div class="filter-bar">
+          <select>
+            <option>جميع المواد</option>
+            <option>القانون المدني</option>
+            <option>قانون الإجراءات</option>
+            <option>القانون الجنائي</option>
+            <option>قانون العمل</option>
+            <option>القانون التجاري</option>
+          </select>
+          <select>
+            <option>الترتيب حسب التاريخ</option>
+            <option>الأحدث أولاً</option>
+            <option>الأقدم أولاً</option>
+          </select>
+          <input type="text" placeholder="بحث داخل النصوص...">
+        </div>
+
+        <div class="content-list" id="laws-list">
+          <div class="content-item"><div class="info"><h4>جاري تحميل القوانين من قاعدة البيانات...</h4></div></div>
+        </div>
+      </div>
+
+      <!-- Livres -->
+      <div id="livres" class="tab-content">
+        <div class="filter-bar">
+          <select>
+            <option>جميع التخصصات</option>
+            <option>القانون الخاص</option>
+            <option>القانون العام</option>
+            <option>القانون الجنائي</option>
+          </select>
+          <input type="text" placeholder="ابحث عن كتاب...">
+        </div>
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-icon"><i class="fas fa-book"></i></div>
+            <div class="card-body">
+              <h3>الوجيز في القانون المدني</h3>
+              <p>مؤلف جماعي • دار النشر الجامعية • 2023</p>
+              <a href="#" class="card-link">عرض التفاصيل <i class="fas fa-arrow-left"></i></a>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-icon"><i class="fas fa-book"></i></div>
+            <div class="card-body">
+              <h3>شرح قانون الإجراءات المدنية والإدارية</h3>
+              <p>د. أحمد بن محمد • 2024</p>
+              <a href="#" class="card-link">عرض التفاصيل <i class="fas fa-arrow-left"></i></a>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-icon"><i class="fas fa-book"></i></div>
+            <div class="card-body">
+              <h3>المدخل إلى العلوم القانونية</h3>
+              <p>د. فاطمة الزهراء • طبعة 2022</p>
+              <a href="#" class="card-link">عرض التفاصيل <i class="fas fa-arrow-left"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Theses -->
+      <div id="theses" class="tab-content">
+        <div class="content-list">
+        <div id="theses-list"><div class="content-item"><div class="info"><h4>جاري التحميل...</h4></div></div></div>
+      </div>
+      </div>
+
+      <!-- Articles -->
+      <div id="articles" class="tab-content">
+        <div class="content-list">
+          <div class="content-item">
+            <div class="icon"><i class="fas fa-newspaper"></i></div>
+            <div class="info">
+              <h4>تطور مفهوم المسؤولية التقصيرية في الاجتهاد القضائي</h4>
+              <div class="meta">مجلة القانون والمجتمع • المجلد 12 • 2024</div>
+            </div>
+            <span class="badge">مقال</span>
+          </div>
+          <div class="content-item">
+            <div class="icon"><i class="fas fa-newspaper"></i></div>
+            <div class="info">
+              <h4>إشكاليات تطبيق قانون حماية المستهلك في البيئة الرقمية</h4>
+              <div class="meta">المجلة الجزائرية للقانون • 2025</div>
+            </div>
+            <span class="badge">مقال</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rapports -->
+      <div id="rapports" class="tab-content">
+        <div class="content-list">
+          <div class="content-item">
+            <div class="icon"><i class="fas fa-file-pdf"></i></div>
+            <div class="info">
+              <h4>تقرير حول واقع العدالة في الجزائر 2024</h4>
+              <div class="meta">وزارة العدل • تقرير رسمي</div>
+            </div>
+            <span class="badge">تقرير</span>
+          </div>
+          <div class="content-item">
+            <div class="icon"><i class="fas fa-file-pdf"></i></div>
+            <div class="info">
+              <h4>دراسة حول تطوير المنظومة التشريعية</h4>
+              <div class="meta">المجلس الوطني الاقتصادي والاجتماعي • 2023</div>
+            </div>
+            <span class="badge">تقرير</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="logo">
+            <div class="logo-icon">J</div>
+            Jurithèque
+          </a>
+          <p>منصة قانونية إلكترونية تهدف إلى تسهيل الوصول إلى المعرفة القانونية.</p>
+        </div>
+        <div>
+          <h4>الأقسام</h4>
+          <ul>
+            <li><a href="bibliotheque.html">المكتبة القانونية</a></li>
+            <li><a href="jurisprudence.html">الاجتهادات القضائية</a></li>
+            <li><a href="formations.html">المحاضرات والتكوينات</a></li>
+            <li><a href="annonces.html">الإعلانات</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>روابط سريعة</h4>
+          <ul>
+            <li><a href="assistant.html">المساعد الذكي</a></li>
+            <li><a href="#">من نحن</a></li>
+            <li><a href="#">سياسة الخصوصية</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>تواصل معنا</h4>
+          <ul>
+            <li><a href="mailto:contact@juritheque.com">contact@juritheque.com</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2025 Jurithèque. جميع الحقوق محفوظة.</p>
+      </div>
+    </div>
+  </footer>
+
+  
+  <script src="js/demo-data.js"></script>
+  <script src="js/public-api.js"></script>
+  <script>
+    async function loadPublicLaws() {
+      const box = document.getElementById('laws-list');
+      if (!box) return;
+      const res = await PublicAPI.fetchAPI('/laws?limit=30');
+      if (!res || !res.data || !res.data.length) {
+        box.innerHTML = '<div class="content-item"><div class="info"><h4>لا توجد قوانين في قاعدة البيانات بعد. أضفها من لوحة التحكم.</h4><div class="meta">تأكد أن الخادم يعمل على localhost:4000</div></div></div>';
+        return;
+      }
+      const statusMap = { sari: 'ساري', muaddal: 'معدل', mutammam: 'متمم', mulgha: 'ملغى' };
+      box.innerHTML = res.data.map(function(law) {
+        return '<div class="content-item">' +
+          '<div class="icon"><i class="fas fa-scroll"></i></div>' +
+          '<div class="info"><h4>' + PublicAPI.escapeHtml(law.title) + '</h4>' +
+          '<div class="meta">' + PublicAPI.escapeHtml(law.officialNumber || '') +
+          (law.publicationDate ? ' • ' + PublicAPI.formatDate(law.publicationDate) : '') +
+          '</div></div>' +
+          '<span class="badge">' + (statusMap[law.status] || law.status || '') + '</span></div>';
+      }).join('');
+    }
+
+    async function loadPublicTheses() {
+      const box = document.getElementById('theses-list');
+      if (!box) return;
+      const res = await PublicAPI.fetchAPI('/theses?limit=20');
+      if (!res || !res.data || !res.data.length) {
+        box.innerHTML = '<div class="content-item"><div class="info"><h4>لا توجد رسائل بعد. أضفها من لوحة التحكم.</h4></div></div>';
+        return;
+      }
+      box.innerHTML = res.data.map(function(t) {
+        return '<div class="content-item">' +
+          '<div class="icon"><i class="fas fa-graduation-cap"></i></div>' +
+          '<div class="info"><h4>' + PublicAPI.escapeHtml(t.title) + '</h4>' +
+          '<div class="meta">' + PublicAPI.escapeHtml(t.university || '') +
+          (t.defenseYear ? ' • ' + t.defenseYear : '') + '</div></div>' +
+          '<span class="badge">' + PublicAPI.escapeHtml(t.degree || '') + '</span></div>';
+      }).join('');
+    }
+
+    async function loadPublicBooks() {
+      const box = document.querySelector('#livres .cards-grid');
+      if (!box) return;
+      const res = await PublicAPI.fetchAPI('/books?limit=12');
+      if (!res || !res.data || !res.data.length) return;
+      box.innerHTML = res.data.map(function(b) {
+        return '<div class="card"><div class="card-icon"><i class="fas fa-book"></i></div>' +
+          '<div class="card-body"><h3>' + PublicAPI.escapeHtml(b.title) + '</h3>' +
+          '<p>' + PublicAPI.escapeHtml(b.publisher || '') +
+          (b.publicationYear ? ' • ' + b.publicationYear : '') + '</p></div></div>';
+      }).join('');
+    }
+
+    async function loadPublicArticles() {
+      const tab = document.getElementById('articles');
+      if (!tab) return;
+      let list = tab.querySelector('.content-list');
+      if (!list) {
+        list = document.createElement('div');
+        list.className = 'content-list';
+        list.id = 'articles-list';
+        tab.appendChild(list);
+      }
+      const res = await PublicAPI.fetchAPI('/articles?limit=20');
+      if (!res || !res.data || !res.data.length) {
+        list.innerHTML = '<div class="content-item"><div class="info"><h4>لا توجد مقالات بعد.</h4></div></div>';
+        return;
+      }
+      list.innerHTML = res.data.map(function(a) {
+        return '<div class="content-item">' +
+          '<div class="icon"><i class="fas fa-newspaper"></i></div>' +
+          '<div class="info"><h4>' + PublicAPI.escapeHtml(a.title) + '</h4>' +
+          '<div class="meta">' + PublicAPI.escapeHtml(a.journalName || '') +
+          (a.publicationYear ? ' • ' + a.publicationYear : '') + '</div></div>' +
+          '<span class="badge">مقال</span></div>';
+      }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      loadPublicLaws();
+      loadPublicTheses();
+      loadPublicBooks();
+      loadPublicArticles();
+    });
+  </script>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

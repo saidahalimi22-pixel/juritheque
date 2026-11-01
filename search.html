@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>البحث المتقدم | Jurithèque</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .search-hero {
+      background: linear-gradient(135deg, #0A2540, #1E3A5F);
+      color: white;
+      padding: 48px 0;
+      text-align: center;
+    }
+    .search-hero h1 { font-size: 2rem; margin-bottom: 24px; }
+    .advanced-search-box {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      text-align: right;
+    }
+    .advanced-search-box input[type="text"] {
+      width: 100%;
+      padding: 16px 20px;
+      border: 2px solid #E5E7EB;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      outline: none;
+    }
+    .advanced-search-box input:focus { border-color: #C9A84C; }
+    .filters-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .filters-row select {
+      padding: 10px 14px;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      width: 100%;
+    }
+    .search-btn {
+      width: 100%;
+      padding: 14px;
+      background: #C9A84C;
+      color: #0A2540;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .search-btn:hover { background: #E8D48B; }
+    .results-section { padding: 48px 0; }
+    .result-item {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+    .result-item:hover {
+      border-color: #C9A84C;
+      box-shadow: 0 4px 20px rgba(10,37,64,0.08);
+    }
+    .result-item .type-badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(201,168,76,0.15);
+      color: #A88B2E;
+      margin-bottom: 8px;
+    }
+    .result-item h3 {
+      color: #0A2540;
+      font-size: 1.15rem;
+      margin-bottom: 6px;
+    }
+    .result-item .snippet {
+      color: #5A6577;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .result-item .meta {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #9CA3AF;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-top">
+      <div class="container">
+        <span>منصة قانونية موثوقة ومتخصصة</span>
+        <div><a href="assistant.html"><i class="fas fa-robot"></i> المساعد الذكي</a></div>
+      </div>
+    </div>
+    <div class="header-main">
+      <div class="container">
+        <a href="index.html" class="logo">
+          <div class="logo-icon">J</div>
+          Jurithèque
+        </a>
+        <nav class="nav">
+          <a href="index.html">الرئيسية</a>
+          <a href="bibliotheque.html">المكتبة القانونية</a>
+          <a href="jurisprudence.html">الاجتهادات القضائية</a>
+          <a href="formations.html">المحاضرات والتكوينات</a>
+          <a href="annonces.html">الإعلانات</a>
+          <a href="assistant.html">المساعد الذكي</a>
+        </nav>
+        <button class="mobile-toggle"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="search-hero">
+    <div class="container">
+      <h1><i class="fas fa-search"></i> البحث المتقدم</h1>
+      <div class="advanced-search-box">
+        <input type="text" id="q" placeholder="اكتب كلمات البحث (مثال: المسؤولية التقصيرية، قانون العمل، قرار المحكمة العليا...)">
+        
+        <div class="filters-row">
+          <select id="type">
+            <option value="">كل الأنواع</option>
+            <option value="law">قوانين</option>
+            <option value="jurisprudence">اجتهادات قضائية</option>
+            <option value="book">كتب</option>
+            <option value="thesis">رسائل وأطروحات</option>
+            <option value="article">مقالات</option>
+            <option value="report">تقارير</option>
+            <option value="lecture">محاضرات</option>
+          </select>
+          <select id="category">
+            <option value="">كل التصنيفات</option>
+            <option>القانون المدني</option>
+            <option>القانون الجنائي</option>
+            <option>قانون العمل</option>
+            <option>القانون التجاري</option>
+            <option>القانون الإداري</option>
+          </select>
+          <select id="year">
+            <option value="">كل السنوات</option>
+            <option>2025</option>
+            <option>2024</option>
+            <option>2023</option>
+            <option>2022</option>
+            <option>2020-2021</option>
+            <option>قبل 2020</option>
+          </select>
+          <select id="sort">
+            <option value="relevance">الأكثر صلة</option>
+            <option value="date_desc">الأحدث</option>
+            <option value="date_asc">الأقدم</option>
+          </select>
+        </div>
+
+        <button class="search-btn" onclick="performSearch()">
+          <i class="fas fa-search"></i> بحث
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <section class="results-section">
+    <div class="container">
+      <div id="results-info" style="margin-bottom: 20px; color: #5A6577;"></div>
+      <div id="results">
+        <!-- Sample results -->
+        <div class="result-item">
+          <span class="type-badge">قانون</span>
+          <h3>الأمر رقم 75-58 المؤرخ في 26 سبتمبر 1975 المتضمن القانون المدني</h3>
+          <p class="snippet">يتضمن هذا الأمر الأحكام العامة للقانون المدني الجزائري، بما في ذلك الالتزامات والعقود والمسؤولية التقصيرية والملكية...</p>
+          <div class="meta">ساري المفعول • آخر تعديل 2022 • القانون المدني</div>
+        </div>
+        <div class="result-item">
+          <span class="type-badge">اجتهاد قضائي</span>
+          <h3>قرار المحكمة العليا رقم 1452/2025 - الغرفة المدنية</h3>
+          <p class="snippet">يتعلق القرار بتطبيق أحكام المسؤولية التقصيرية المنصوص عليها في المادة 124 من القانون المدني، حيث أكدت المحكمة على...</p>
+          <div class="meta">15 مارس 2025 • المحكمة العليا • الغرفة المدنية</div>
+        </div>
+        <div class="result-item">
+          <span class="type-badge">أطروحة</span>
+          <h3>الحماية القانونية للمعطيات الشخصية في التشريع الجزائري</h3>
+          <p class="snippet">أطروحة دكتوراه تناقش الإطار القانوني لحماية المعطيات الشخصية في ظل القانون 18-07 والتطورات التكنولوجية...</p>
+          <div class="meta">جامعة الجزائر 1 • 2024 • دكتوراه</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p>© 2025 Jurithèque. جميع الحقوق محفوظة.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function performSearch() {
+      const q = document.getElementById('q').value.trim();
+      const info = document.getElementById('results-info');
+      if (q) {
+        info.textContent = `نتائج البحث عن: "${q}" (عرض تجريبي - في النسخة الحقيقية سيتم البحث في قاعدة البيانات)`;
+      } else {
+        info.textContent = 'أدخل كلمات البحث لبدء البحث';
+      }
+      // في النسخة الحقيقية: إرسال طلب API إلى Backend
+    }
+  </script>
+  <script src="js/demo-data.js"></script>
+  <script src="js/public-api.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

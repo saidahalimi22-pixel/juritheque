@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المساعد القانوني الذكي | Jurithèque</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-top">
+      <div class="container">
+        <span>منصة قانونية موثوقة ومتخصصة</span>
+        <div><a href="assistant.html"><i class="fas fa-robot"></i> المساعد الذكي</a></div>
+      </div>
+    </div>
+    <div class="header-main">
+      <div class="container">
+        <a href="index.html" class="logo">
+          <div class="logo-icon">J</div>
+          Jurithèque
+        </a>
+        <nav class="nav">
+          <a href="index.html">الرئيسية</a>
+          <a href="bibliotheque.html">المكتبة القانونية</a>
+          <a href="jurisprudence.html">الاجتهادات القضائية</a>
+          <a href="formations.html">المحاضرات والتكوينات</a>
+          <a href="annonces.html">الإعلانات</a>
+          <a href="assistant.html" class="active">المساعد الذكي</a>
+        </nav>
+        <button class="mobile-toggle"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>المساعد القانوني الذكي</h1>
+      <p>اسأل أي سؤال قانوني — الإجابات مبنية على محتوى المنصة + نموذج ذكاء اصطناعي</p>
+      <div class="breadcrumb">
+        <a href="index.html">الرئيسية</a>
+        <span>/</span>
+        <span>المساعد الذكي</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="section" style="padding-top: 40px;">
+    <div class="container">
+      <div class="assistant-wrapper">
+        <div class="assistant-sidebar">
+          <h3><i class="fas fa-history"></i> سجل المحادثات</h3>
+          <div class="chat-history-item active" onclick="newChat()">محادثة جديدة</div>
+          <div id="sessions-list"></div>
+        </div>
+
+        <div class="chat-main">
+          <div class="chat-header">
+            <div class="avatar">J</div>
+            <div>
+              <strong>المساعد القانوني الذكي</strong>
+              <div style="font-size: 0.8rem; opacity: 0.8;" id="ai-status">متصل بالخادم</div>
+            </div>
+          </div>
+
+          <div class="chat-messages" id="chat-messages">
+            <div class="message bot">
+              مرحباً بك في المساعد القانوني الذكي لمنصة Jurithèque.
+              <br><br>
+              يمكنني مساعدتك بالاعتماد على القوانين والاجتهادات والمقالات المخزنة في المنصة.
+              <br><br>
+              اكتب سؤالك القانوني الآن...
+            </div>
+          </div>
+
+          <form class="chat-input-area" id="chat-form">
+            <input type="text" id="chat-input" placeholder="اكتب سؤالك القانوني هنا..." autocomplete="off" required>
+            <button type="submit" id="send-btn" title="إرسال">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="text-center mt-4" style="color: var(--text-muted); font-size: 0.9rem;">
+        <p><i class="fas fa-info-circle"></i> الإجابات لأغراض إعلامية ولا تُعتبر استشارة قانونية ملزمة. تأكد أن الـ Backend يعمل على localhost:4000.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p>© 2025 Jurithèque. جميع الحقوق محفوظة.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const API_BASE = localStorage.getItem('API_BASE') || 'http://localhost:4000/api';
+    let currentSessionId = null;
+
+    function appendMessage(text, type) {
+      const div = document.createElement('div');
+      div.className = 'message ' + type;
+      div.style.whiteSpace = 'pre-wrap';
+      div.textContent = text;
+      const box = document.getElementById('chat-messages');
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function appendSources(sources) {
+      if (!sources || !sources.length) return;
+      const div = document.createElement('div');
+      div.className = 'message bot';
+      div.style.fontSize = '0.85rem';
+      div.style.opacity = '0.9';
+      let html = '<strong>المصادر:</strong><br>';
+      sources.forEach(function(s, i) {
+        html += (i + 1) + '. [' + s.type + '] ' + (s.title || '') + (s.ref ? ' — ' + s.ref : '') + '<br>';
+      });
+      div.innerHTML = html;
+      document.getElementById('chat-messages').appendChild(div);
+    }
+
+    function newChat() {
+      currentSessionId = null;
+      document.getElementById('chat-messages').innerHTML =
+        '<div class="message bot">محادثة جديدة. اكتب سؤالك...</div>';
+    }
+
+    document.getElementById('chat-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input');
+      const question = input.value.trim();
+      if (!question) return;
+
+      appendMessage(question, 'user');
+      input.value = '';
+      const btn = document.getElementById('send-btn');
+      btn.disabled = true;
+
+      const loading = document.createElement('div');
+      loading.className = 'message bot';
+      loading.id = 'loading-msg';
+      loading.textContent = 'جاري التفكير...';
+      document.getElementById('chat-messages').appendChild(loading);
+
+      try {
+        const res = await fetch(API_BASE + '/assistant/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: question, sessionId: currentSessionId })
+        });
+        const data = await res.json();
+        document.getElementById('loading-msg')?.remove();
+
+        if (!res.ok) throw new Error(data.error || data.details || 'خطأ في الخادم');
+
+        currentSessionId = data.sessionId;
+        appendMessage(data.answer, 'bot');
+        appendSources(data.sources);
+
+        const status = document.getElementById('ai-status');
+        if (status) {
+          status.textContent = data.usedAI ? 'مدعوم بنموذج ذكاء اصطناعي حقيقي' : 'وضع احتياطي (بدون مفتاح AI)';
+        }
+      } catch (err) {
+        document.getElementById('loading-msg')?.remove();
+        appendMessage('تعذر الاتصال بالخادم: ' + err.message + '\nتأكد أن Backend يعمل على ' + API_BASE, 'bot');
+      } finally {
+        btn.disabled = false;
+        input.focus();
+      }
+    });
+  </script>
+  <script src="js/demo-data.js"></script>
+  <script src="js/public-api.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الاجتهادات القضائية | Jurithèque</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-top">
+      <div class="container">
+        <span>منصة قانونية موثوقة ومتخصصة</span>
+        <div>
+          <a href="assistant.html"><i class="fas fa-robot"></i> المساعد الذكي</a>
+        </div>
+      </div>
+    </div>
+    <div class="header-main">
+      <div class="container">
+        <a href="index.html" class="logo">
+          <div class="logo-icon">J</div>
+          Jurithèque
+        </a>
+        <nav class="nav">
+          <a href="index.html">الرئيسية</a>
+          <a href="bibliotheque.html">المكتبة القانونية</a>
+          <a href="jurisprudence.html" class="active">الاجتهادات القضائية</a>
+          <a href="formations.html">المحاضرات والتكوينات</a>
+          <a href="annonces.html">الإعلانات</a>
+          <a href="assistant.html">المساعد الذكي</a>
+        </nav>
+        <div class="search-box">
+          <input type="text" placeholder="ابحث في الأحكام...">
+          <button type="button"><i class="fas fa-search"></i></button>
+        </div>
+        <button class="mobile-toggle"><i class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>الاجتهادات القضائية</h1>
+      <p>أحكام وقرارات المحاكم والمجالس القضائية مصنفة وقابلة للبحث</p>
+      <div class="breadcrumb">
+        <a href="index.html">الرئيسية</a>
+        <span>/</span>
+        <span>الاجتهادات القضائية</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="container">
+      <div class="filter-bar">
+        <select>
+          <option>جميع الجهات</option>
+          <option>المحكمة العليا</option>
+          <option>مجلس الدولة</option>
+          <option>المحاكم الإدارية</option>
+          <option>المجالس القضائية</option>
+        </select>
+        <select>
+          <option>جميع الغرف</option>
+          <option>الغرفة المدنية</option>
+          <option>الغرفة الجنائية</option>
+          <option>الغرفة الاجتماعية</option>
+          <option>الغرفة التجارية</option>
+        </select>
+        <select>
+          <option>السنة</option>
+          <option>2025</option>
+          <option>2024</option>
+          <option>2023</option>
+          <option>2022</option>
+        </select>
+        <input type="text" placeholder="رقم القرار أو الكلمات المفتاحية...">
+      </div>
+
+      <div class="content-list" id="jur-list">
+        <div class="content-item"><div class="info"><h4>جاري تحميل الاجتهادات من قاعدة البيانات...</h4></div></div>
+      </div>
+      <div class="text-center mt-4">
+        <button class="btn btn-primary">تحميل المزيد من الأحكام</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="logo">
+            <div class="logo-icon">J</div>
+            Jurithèque
+          </a>
+          <p>منصة قانونية إلكترونية تهدف إلى تسهيل الوصول إلى المعرفة القانونية.</p>
+        </div>
+        <div>
+          <h4>الأقسام</h4>
+          <ul>
+            <li><a href="bibliotheque.html">المكتبة القانونية</a></li>
+            <li><a href="jurisprudence.html">الاجتهادات القضائية</a></li>
+            <li><a href="formations.html">المحاضرات والتكوينات</a></li>
+            <li><a href="annonces.html">الإعلانات</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>روابط سريعة</h4>
+          <ul>
+            <li><a href="assistant.html">المساعد الذكي</a></li>
+            <li><a href="#">من نحن</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>تواصل معنا</h4>
+          <ul>
+            <li><a href="mailto:contact@juritheque.com">contact@juritheque.com</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2025 Jurithèque. جميع الحقوق محفوظة.</p>
+      </div>
+    </div>
+  </footer>
+
+  
+  <script src="js/demo-data.js"></script>
+  <script src="js/public-api.js"></script>
+  <script>
+    async function loadJurisprudence() {
+      const box = document.getElementById('jur-list');
+      if (!box) return;
+      const res = await PublicAPI.fetchAPI('/jurisprudence?limit=30');
+      if (!res || !res.data || !res.data.length) {
+        box.innerHTML = '<div class="content-item"><div class="info"><h4>لا توجد اجتهادات في قاعدة البيانات بعد. أضفها من لوحة التحكم.</h4><div class="meta">تأكد أن الخادم يعمل على localhost:4000</div></div></div>';
+        return;
+      }
+      box.innerHTML = res.data.map(function(j) {
+        return '<div class="content-item">' +
+          '<div class="icon"><i class="fas fa-gavel"></i></div>' +
+          '<div class="info"><h4>' + PublicAPI.escapeHtml(j.decisionNumber + (j.subject ? ' - ' + j.subject : '')) + '</h4>' +
+          '<div class="meta">' + PublicAPI.escapeHtml(j.court || '') +
+          (j.chamber ? ' • ' + PublicAPI.escapeHtml(j.chamber) : '') +
+          (j.decisionDate ? ' • ' + PublicAPI.formatDate(j.decisionDate) : '') +
+          '</div></div>' +
+          '<span class="badge">حكم</span></div>';
+      }).join('');
+    }
+    document.addEventListener('DOMContentLoaded', loadJurisprudence);
+  </script>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

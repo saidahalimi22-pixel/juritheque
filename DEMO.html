@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Jurithèque | المنصة القانونية</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --royal:#0B1C3D;--royal-mid:#132B5C;--royal-deep:#06102A;
+  --gold:#D4AF37;--gold-bright:#E8C547;--gold-dark:#A88B1A;
+  --cream:#FBF8F1;--text:#0F172A;--muted:#64748B;
+  --shadow:0 10px 40px rgba(11,28,61,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--cream);color:var(--text);direction:rtl;line-height:1.7;min-height:100vh}
+button,input{font-family:inherit}
+.topbar{background:linear-gradient(90deg,var(--royal-deep),var(--royal),var(--royal-mid));color:#fff;padding:0 16px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;border-bottom:2px solid var(--gold);box-shadow:0 4px 24px rgba(0,0,0,.35)}
+.logo{display:flex;align-items:center;gap:12px;font-weight:800;font-size:1.15rem}
+.logo-mark{width:42px;height:42px;background:linear-gradient(145deg,var(--gold-bright),var(--gold),var(--gold-dark));border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--royal-deep);font-size:1.1rem;box-shadow:0 2px 8px rgba(212,175,55,.4)}
+.logo em{color:var(--gold);font-style:normal}
+.top-actions{display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;font-weight:700;font-size:.88rem;cursor:pointer}
+.btn-gold{background:linear-gradient(145deg,var(--gold-bright),var(--gold));color:var(--royal-deep)}
+.btn-outline-gold{background:transparent;color:var(--gold);border:1.5px solid var(--gold)}
+.btn-block{width:100%;justify-content:center;padding:12px;font-size:1rem}
+.hero{
+  background: linear-gradient(165deg, #06102A 0%, #0B1C3D 45%, #132B5C 100%);
+  color:#fff;
+  padding:48px 20px 56px;
+  text-align:center;
+  position:relative;
+}
+
+.hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.hero-badge{display:inline-block;background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.45);color:var(--gold-bright);padding:6px 14px;border-radius:20px;font-size:.8rem;font-weight:600;margin-bottom:18px}
+.hero h1{font-size:1.7rem;font-weight:800;line-height:1.35;margin-bottom:14px;max-width:520px;margin-left:auto;margin-right:auto}
+.hero h1 span{color:var(--gold-bright)}
+.hero p{opacity:.88;font-size:.98rem;max-width:440px;margin:0 auto 28px}
+.hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:32px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:480px;margin:0 auto}
+@media(max-width:480px){.stats{grid-template-columns:1fr 1fr}.hero h1{font-size:1.4rem}}
+.stat{background:rgba(255,255,255,.06);border:1px solid rgba(212,175,55,.22);border-radius:12px;padding:14px 8px}
+.stat b{display:block;font-size:1.3rem;color:var(--gold);font-weight:800}
+.stat small{font-size:.75rem;opacity:.8}
+.wrap{max-width:720px;margin:0 auto;padding:28px 16px 40px}
+.sec-title{text-align:center;margin-bottom:22px}
+.sec-title h2{color:var(--royal);font-size:1.3rem;font-weight:800;position:relative;display:inline-block;padding-bottom:10px}
+.sec-title h2::after{content:'';position:absolute;bottom:0;right:50%;transform:translateX(50%);width:48px;height:3px;background:var(--gold);border-radius:2px}
+.sec-title p{color:var(--muted);font-size:.9rem;margin-top:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:400px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #E8ECF0;border-radius:16px;padding:20px 16px;text-align:center;cursor:pointer;box-shadow:0 4px 16px rgba(11,28,61,.05);transition:.2s}
+.card:active{border-color:var(--gold);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card-icon{width:56px;height:56px;margin:0 auto 12px;background:linear-gradient(145deg,var(--royal),var(--royal-mid));border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:1.35rem;box-shadow:0 6px 16px rgba(11,28,61,.2)}
+.card h3{color:var(--royal);font-size:1rem;font-weight:800;margin-bottom:4px}
+.card p{color:var(--muted);font-size:.8rem}
+.panel{display:none;max-width:720px;margin:0 auto;padding:16px 16px 80px;animation:up .3s ease}
+.panel.show{display:block}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.panel-bar{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.panel-bar h2{color:var(--royal);font-size:1.15rem;font-weight:800}
+.back{background:var(--royal);color:#fff;border:none;width:40px;height:40px;border-radius:10px;cursor:pointer;font-size:1rem}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:16px}
+.tab{flex-shrink:0;background:#fff;border:1px solid #E2E8F0;color:var(--muted);padding:8px 14px;border-radius:20px;font-size:.82rem;font-weight:600;cursor:pointer}
+.tab.on{background:var(--royal);color:var(--gold);border-color:var(--royal)}
+.list-item{background:#fff;border:1px solid #E8ECF0;border-radius:14px;padding:16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;box-shadow:0 2px 10px rgba(11,28,61,.04)}
+.list-item .ico{width:44px;height:44px;background:linear-gradient(145deg,var(--royal),var(--royal-mid));color:var(--gold);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.list-item h4{color:var(--royal);font-size:.95rem;font-weight:700;line-height:1.45;margin-bottom:4px}
+.list-item .meta{color:var(--muted);font-size:.8rem}
+.badge{display:inline-block;margin-top:8px;background:rgba(212,175,55,.18);color:var(--gold-dark);border:1px solid rgba(212,175,55,.35);font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px}
+.lock-note{background:linear-gradient(135deg,#FFF9E6,#FFFBF0);border:1px solid rgba(212,175,55,.4);border-radius:12px;padding:12px 14px;font-size:.85rem;color:#6B5200;margin-bottom:14px;display:flex;gap:10px}
+.auth-card{background:#fff;border-radius:18px;border:1px solid #E8ECF0;box-shadow:var(--shadow);padding:28px 22px;max-width:400px;margin:0 auto}
+.auth-card h2{text-align:center;color:var(--royal);font-size:1.25rem;margin-bottom:6px}
+.auth-card .sub{text-align:center;color:var(--muted);font-size:.88rem;margin-bottom:22px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.85rem;font-weight:700;color:var(--royal);margin-bottom:6px}
+.field input{width:100%;padding:12px 14px;border:1.5px solid #E2E8F0;border-radius:10px;font-size:.95rem;outline:none;background:#FAFBFC}
+.field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,175,55,.15)}
+.auth-switch{text-align:center;margin-top:16px;font-size:.88rem;color:var(--muted)}
+.auth-switch button{background:none;border:none;color:var(--gold-dark);font-weight:700;cursor:pointer;font-size:.88rem}
+.admin-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.admin-stat{background:#fff;border-radius:14px;padding:16px;border:1px solid #E8ECF0;display:flex;gap:12px;align-items:center}
+.admin-stat .ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff}
+.admin-stat .ic.b{background:var(--royal)}.admin-stat .ic.g{background:linear-gradient(145deg,var(--gold),var(--gold-dark));color:var(--royal)}
+.admin-stat b{display:block;font-size:1.15rem;color:var(--royal)}
+.admin-stat small{color:var(--muted);font-size:.78rem}
+.admin-menu{display:grid;gap:8px}
+.admin-menu button{background:#fff;border:1px solid #E8ECF0;border-radius:12px;padding:14px 16px;text-align:right;display:flex;align-items:center;gap:12px;cursor:pointer;color:var(--royal);font-weight:700;font-size:.92rem}
+.admin-menu button i{width:36px;height:36px;background:var(--royal);color:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.chat{background:#fff;border-radius:16px;border:1px solid #E8ECF0;overflow:hidden;box-shadow:var(--shadow)}
+.chat-head{background:linear-gradient(90deg,var(--royal-deep),var(--royal));color:#fff;padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--gold)}
+.chat-head .av{width:40px;height:40px;background:linear-gradient(145deg,var(--gold-bright),var(--gold));color:var(--royal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800}
+.chat-log{height:260px;overflow-y:auto;padding:16px;background:var(--cream)}
+.bubble{max-width:82%;padding:11px 14px;border-radius:14px;margin-bottom:10px;font-size:.9rem;line-height:1.55}
+.bubble.bot{background:#fff;border:1px solid #E8ECF0;border-bottom-right-radius:4px}
+.bubble.user{background:var(--royal);color:#fff;margin-right:auto;border-bottom-left-radius:4px}
+.chat-input{display:flex;gap:8px;padding:12px;border-top:1px solid #E8ECF0}
+.chat-input input{flex:1;border:1.5px solid #E2E8F0;border-radius:24px;padding:11px 16px;outline:none;font-size:.92rem}
+.chat-input button{width:46px;height:46px;border-radius:50%;border:none;background:linear-gradient(145deg,var(--gold-bright),var(--gold));color:var(--royal);cursor:pointer}
+.user-chip{display:none;align-items:center;gap:8px;background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.35);padding:5px 12px 5px 6px;border-radius:20px;font-size:.82rem;color:var(--gold-bright)}
+.user-chip .av{width:28px;height:28px;background:var(--gold);color:var(--royal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem}
+.footer-note{text-align:center;padding:20px 16px;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo"><div class="logo-mark"><i class="fas fa-balance-scale"></i></div><div>Juri<em>thèque</em><div style="font-size:.65rem;font-weight:600;color:var(--gold);opacity:.95;margin-top:1px">للأبحاث والدراسات القانونية</div></div></div>
+  <div class="top-actions">
+    <div class="user-chip" id="user-chip"><div class="av" id="user-av">م</div><span id="user-name">مستخدم</span></div>
+    <button class="btn btn-outline-gold" id="btn-login-top" onclick="show('auth')"><i class="fas fa-user"></i> دخول</button>
+    <button class="btn btn-gold" id="btn-admin-top" onclick="show('admin')" style="display:none"><i class="fas fa-cog"></i> الإدارة</button>
+  </div>
+</header>
+
+<div id="view-home">
+<section class="hero"><div style="position:relative;z-index:1">
+  <div class="hero-badge"><i class="fas fa-gem"></i> منصة قانونية متكاملة</div>
+  <h1>Jurithèque<br><span style="font-size:.82em;font-weight:700;color:var(--gold-bright)">منصة للأبحاث والدراسات القانونية</span></h1>
+  <p>تشريع، اجتهادات، مؤتمرات، محاضرات، وأبحاث قانونية</p>
+  <div class="hero-btns">
+    <button class="btn btn-gold" onclick="show('library')"><i class="fas fa-book-open"></i> استكشف المكتبة</button>
+    <button class="btn btn-outline-gold" onclick="show('assistant')"><i class="fas fa-robot"></i> المساعد الذكي</button>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>2.5K+</b><small>نص قانوني</small></div>
+    <div class="stat"><b>1.8K+</b><small>اجتهاد</small></div>
+    <div class="stat"><b>450+</b><small>مرجع</small></div>
+    <div class="stat"><b>120+</b><small>تكوين</small></div>
+  </div></div>
+</section>
+<div class="wrap">
+  <div class="sec-title"><h2>أقسام المنصة</h2><p>اختر القسم الذي تريد استكشافه</p></div>
+  <div class="grid">
+    <div class="card" onclick="show('library')"><div class="card-icon"><i class="fas fa-landmark"></i></div><h3>المكتبة القانونية</h3><p>قوانين، كتب، أطروحات، مقالات</p></div>
+    <div class="card" onclick="show('jur')"><div class="card-icon"><i class="fas fa-gavel"></i></div><h3>الاجتهادات</h3><p>أحكام وقرارات قضائية</p></div>
+    <div class="card" onclick="show('lectures')"><div class="card-icon"><i class="fas fa-chalkboard-teacher"></i></div><h3>التكوينات</h3><p>محاضرات بيداغوجية • ورشات ودورات</p></div>
+    <div class="card" onclick="show('annonces')"><div class="card-icon"><i class="fas fa-bullhorn"></i></div><h3>الإعلانات</h3><p>ندوات ومؤتمرات • مباريات</p></div>
+    <div class="card" onclick="show('assistant')"><div class="card-icon"><i class="fas fa-brain"></i></div><h3>المساعد الذكي</h3><p>إجابات مبنية على المصادر</p></div>
+    <div class="card" onclick="show('auth')"><div class="card-icon"><i class="fas fa-user-lock"></i></div><h3>حسابي</h3><p>تسجيل ودخول الأعضاء</p></div>
+  </div>
+</div>
+<div class="footer-note">Jurithèque — نسخة معاينة للشكل قبل النشر الكامل</div>
+</div>
+
+<div class="panel" id="view-library">
+  <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>المكتبة القانونية</h2></div>
+  <div class="lock-note"><i class="fas fa-info-circle"></i><div>محتوى نموذجي <strong>مغربي</strong> مع مراجع من دول أخرى. التحميل الكامل بعد النشر وتسجيل الدخول.</div></div>
+  <div class="tabs">
+    <button class="tab on" onclick="libTab(this,'laws')"><i class="fas fa-scroll"></i> القوانين</button>
+    <button class="tab" onclick="libTab(this,'books')"><i class="fas fa-book"></i> الكتب</button>
+    <button class="tab" onclick="libTab(this,'theses')"><i class="fas fa-graduation-cap"></i> الرسائل</button>
+    <button class="tab" onclick="libTab(this,'articles')"><i class="fas fa-newspaper"></i> المقالات</button>
+    <button class="tab" onclick="libTab(this,'reports')"><i class="fas fa-file-alt"></i> التقارير</button>
+  </div>
+  <div id="lib-list"></div>
+</div>
+
+<div class="panel" id="view-jur">
+  <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>الاجتهادات القضائية</h2></div>
+  <div id="jur-list"></div>
+</div>
+<div class="panel" id="view-lectures">
+  <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>المحاضرات والتكوينات</h2></div>
+  <h3 style="color:var(--royal);font-size:1rem;margin:8px 0 10px;display:flex;align-items:center;gap:8px"><i class="fas fa-chalkboard-teacher" style="color:var(--gold)"></i> المحاضرات والدروس البيداغوجية</h3>
+  <div id="lec-ped"></div>
+  <h3 style="color:var(--royal);font-size:1rem;margin:22px 0 10px;display:flex;align-items:center;gap:8px"><i class="fas fa-user-graduate" style="color:var(--gold)"></i> الورشات والدورات التكوينية</h3>
+  <div id="lec-work"></div>
+</div>
+<div class="panel" id="view-annonces">
+  <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>الإعلانات</h2></div>
+  <h3 style="color:var(--royal);font-size:1rem;margin:8px 0 10px;display:flex;align-items:center;gap:8px"><i class="fas fa-university" style="color:var(--gold)"></i> المؤتمرات والندوات العلمية</h3>
+  <div id="ann-conf"></div>
+  <h3 style="color:var(--royal);font-size:1rem;margin:22px 0 10px;display:flex;align-items:center;gap:8px"><i class="fas fa-briefcase" style="color:var(--gold)"></i> مباريات التوظيف والدراسات العليا</h3>
+  <div id="ann-comp"></div>
+</div>
+
+<div class="panel" id="view-assistant">
+  <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>المساعد الذكي</h2></div>
+  <div class="chat">
+    <div class="chat-head"><div class="av"><i class="fas fa-balance-scale"></i></div><div><strong>المساعد القانوني</strong><div style="font-size:.75rem;opacity:.8">معاينة الواجهة</div></div></div>
+    <div class="chat-log" id="chat-log"><div class="bubble bot">مرحباً بك في المساعد القانوني لمنصة Jurithèque. كيف يمكنني مساعدتك؟</div></div>
+    <form class="chat-input" onsubmit="return sendMsg(event)">
+      <input id="chat-in" placeholder="اكتب سؤالك القانوني...">
+      <button type="submit"><i class="fas fa-paper-plane"></i></button>
+    </form>
+  </div>
+</div>
+
+<div class="panel" id="view-auth">
+  <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>حساب العضوية</h2></div>
+  <div class="auth-card">
+    <div style="text-align:center;margin-bottom:12px"><div class="logo-mark" style="margin:0 auto;width:52px;height:52px;font-size:1.25rem"><i class="fas fa-user-shield"></i></div></div>
+    <h2 id="auth-title">تسجيل الدخول</h2>
+    <p class="sub" id="auth-sub">للأعضاء — الوصول لتحميل المراجع</p>
+    <div id="form-login">
+      <div class="field"><label>البريد الإلكتروني</label><input type="email" id="login-email" value="user@juritheque.com"></div>
+      <div class="field"><label>كلمة المرور</label><input type="password" id="login-pass" value="123456"></div>
+      <button class="btn btn-gold btn-block" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> دخول</button>
+      <div class="auth-switch">ليس لديك حساب؟ <button type="button" onclick="toggleAuth(false)">إنشاء حساب</button></div>
+      <p style="margin-top:14px;font-size:.8rem;color:var(--muted);text-align:center">للوحة الإدارة جرّب: <b>admin@juritheque.com</b></p>
+    </div>
+    <div id="form-register" style="display:none">
+      <div class="field"><label>الاسم الكامل</label><input type="text" id="reg-name" placeholder="اسمك"></div>
+      <div class="field"><label>البريد</label><input type="email" id="reg-email"></div>
+      <div class="field"><label>كلمة المرور</label><input type="password" id="reg-pass"></div>
+      <button class="btn btn-gold btn-block" onclick="doRegister()"><i class="fas fa-user-plus"></i> إنشاء الحساب</button>
+      <div class="auth-switch">لديك حساب؟ <button type="button" onclick="toggleAuth(true)">دخول</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="view-admin">
+  <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>لوحة التحكم</h2></div>
+  <div class="lock-note"><i class="fas fa-shield-alt"></i><div><strong>معاينة الإدارة.</strong> بعد النشر على الخادم: إضافة وتعديل وحذف ورفع PDF بشكل حقيقي.</div></div>
+  <div class="admin-stats">
+    <div class="admin-stat"><div class="ic b"><i class="fas fa-landmark"></i></div><div><b>248</b><small>نص قانوني</small></div></div>
+    <div class="admin-stat"><div class="ic g"><i class="fas fa-gavel"></i></div><div><b>1,152</b><small>اجتهاد</small></div></div>
+    <div class="admin-stat"><div class="ic b"><i class="fas fa-users"></i></div><div><b>1,420</b><small>مستخدم</small></div></div>
+    <div class="admin-stat"><div class="ic g"><i class="fas fa-file-pdf"></i></div><div><b>87</b><small>مرجع PDF</small></div></div>
+  </div>
+  <div class="admin-menu">
+    <button type="button"><i class="fas fa-plus"></i> إضافة قانون جديد</button>
+    <button type="button"><i class="fas fa-gavel"></i> إدارة الاجتهادات</button>
+    <button type="button"><i class="fas fa-book"></i> إدارة الكتب والمقالات</button>
+    <button type="button"><i class="fas fa-bullhorn"></i> إدارة الإعلانات</button>
+    <button type="button"><i class="fas fa-users-cog"></i> إدارة المستخدمين</button>
+    <button type="button"><i class="fas fa-upload"></i> رفع ملفات PDF</button>
+  </div>
+</div>
+
+<script>
+const DATA={
+laws:[
+{t:'ظهير شريف بمثابة قانون الالتزامات والعقود (9 رمضان 1331 / 12 أغسطس 1913) كما تم تغييره وتتميمه',m:'المغرب • الجريدة الرسمية • ساري المفعول',b:'قانون مغربي',ic:'fa-scroll'},
+{t:'القانون رقم 70.03 بمثابة مدونة الأسرة',m:'المغرب • مدونة الأسرة • معدل ومتمم',b:'أسرة',ic:'fa-scroll'},
+{t:'مجموعة القانون الجنائي المغربي',m:'المغرب • القانون الجنائي • ساري',b:'جنائي',ic:'fa-scroll'},
+{t:'قانون المسطرة المدنية المغربي',m:'المغرب • مسطرة مدنية',b:'مسطرة',ic:'fa-scroll'},
+{t:'القانون رقم 15.95 المتعلق بمدونة التجارة',m:'المغرب • مدونة التجارة',b:'تجاري',ic:'fa-scroll'},
+{t:'القانون رقم 65.99 المتعلق بمدونة الشغل',m:'المغرب • مدونة الشغل',b:'شغل',ic:'fa-scroll'},
+{t:'الدستور المغربي لسنة 2011',m:'المملكة المغربية • الدستور',b:'دستوري',ic:'fa-scroll'}
+],
+books:[
+{t:'شرح قانون الالتزامات والعقود المغربي — نظرية الالتزام',m:'المغرب • مؤلفات قانونية جامعية',b:'كتاب مغربي',ic:'fa-book'},
+{t:'مدونة الأسرة في ضوء العمل القضائي المغربي',m:'المغرب • دراسات فقهوال',b:'كتاب مغربي',ic:'fa-book'},
+{t:'الوجيز في القانون التجاري المغربي',m:'المغرب • منشورات جامعية',b:'كتاب مغربي',ic:'fa-book'},
+{t:'Introduction to Comparative Civil Law',m:'دولي • Comparative Legal Studies',b:'كتاب دولي',ic:'fa-book'},
+{t:'Droit des obligations — approches comparées',m:'فرنسا / المغرب • دراسات مقارنة',b:'كتاب مقارن',ic:'fa-book'}
+],
+theses:[
+{t:'الحماية القانونية للمعطيات ذات الطابع الشخصي في التشريع المغربي',m:'جامعة محمد الخامس — الرباط • دكتوراه',b:'دكتوراه مغربية',ic:'fa-graduation-cap'},
+{t:'المسؤولية المدنية عن الأضرار البيئية في القانون المغربي',m:'جامعة الحسن الثاني — الدار البيضاء • ماجستير',b:'ماجستير مغربية',ic:'fa-graduation-cap'},
+{t:'عقد العمل في مدونة الشغل المغربية والاجتهاد القضائي',m:'جامعة سيدي محمد بن عبد الله — فاس • دكتوراه',b:'دكتوراه مغربية',ic:'fa-graduation-cap'},
+{t:'Digital Consumer Protection in Comparative Law',m:'جامعة أوروبية • أطروحة دكتوراه',b:'دولية',ic:'fa-graduation-cap'}
+],
+articles:[
+{t:'تطبيقات مدونة الأسرة أمام محاكم الموضوع في ضوء قرارات محكمة النقض',m:'المغرب • مجلة القضاء والقانون',b:'مقال مغربي',ic:'fa-newspaper'},
+{t:'إشكاليات الإثبات الإلكتروني في قانون المسطرة المدنية المغربي',m:'المغرب • المجلة المغربية للقانون',b:'مقال مغربي',ic:'fa-newspaper'},
+{t:'Open Access perspectives on labor law reform in North Africa',m:'دولي • Open Access Journal',b:'مقال دولي مفتوح',ic:'fa-newspaper'},
+{t:'حماية المستهلك في التشريع المغربي والقانون المقارن',m:'المغرب / مقارن • مجلة الدراسات القانونية',b:'مقال مقارن',ic:'fa-newspaper'}
+],
+reports:[
+{t:'تقرير حول وضعية العدالة بالمملكة المغربية',m:'المغرب • مؤسسة رسمية / تقرير',b:'تقرير مغربي',ic:'fa-file-alt'},
+{t:'تقرير التنمية البشرية — البعد القانوني والمؤسساتي',m:'دولي • تقرير أممي / مفتوح',b:'تقرير دولي',ic:'fa-file-alt'}
+],
+jur:[
+{t:'قرار محكمة النقض المغربية — الغرفة المدنية',m:'المغرب • محكمة النقض • مثال للمعاينة',b:'مدني',ic:'fa-gavel'},
+{t:'قرار محكمة النقض — قضايا الأسرة ومدونة الأسرة',m:'المغرب • غرفة الأحوال الشخصية',b:'أسرة',ic:'fa-gavel'},
+{t:'قرار في نزاع شغل على ضوء مدونة الشغل',m:'المغرب • الغرفة الاجتماعية',b:'شغل',ic:'fa-gavel'},
+{t:'اجتهاد إداري — المنازعات الإدارية',m:'المغرب • القضاء الإداري',b:'إداري',ic:'fa-gavel'}
+],
+pedagogy:[
+{t:'مستجدات مدونة الأسرة والعمل القضائي المغربي',m:'أستاذ جامعي مغربي • محاضرة بيداغوجية',b:'محاضرة',ic:'fa-chalkboard-teacher'},
+{t:'شرح قانون الالتزامات والعقود — الجزء الأول',m:'درس جامعي • سلك الإجازة',b:'درس',ic:'fa-book-reader'},
+{t:'مدخل إلى القانون الدستوري المغربي',m:'محاضرة أكاديمية',b:'محاضرة',ic:'fa-landmark'}
+],
+workshops:[
+{t:'دورة في قانون المسطرة المدنية المغربي',m:'تكوين مهني • عدة حصص',b:'دورة',ic:'fa-user-graduate'},
+{t:'ورشة الصياغة القانونية والمذكرات',m:'ورشة تطبيقية • مهنيون وطلبة',b:'ورشة',ic:'fa-pencil-ruler'},
+{t:'تكوين متخصص في التحكيم والوساطة',m:'دورة تكوينية معتمدة',b:'تكوين',ic:'fa-handshake'}
+],
+conferences:[
+{t:'ندوة وطنية حول مستجدات التشريع المغربي',m:'جامعة مغربية • ندوة علمية',b:'ندوة',ic:'fa-university'},
+{t:'مؤتمر دولي للقانون والأبحاث القانونية',m:'المغرب / دولي • مؤتمر',b:'مؤتمر',ic:'fa-users'},
+{t:'يوم دراسي حول الاجتهاد القضائي لمحكمة النقض',m:'هيئة مهنية أو جامعة • يوم دراسي',b:'يوم دراسي',ic:'fa-chalkboard'}
+],
+competitions:[
+{t:'مباراة ولوج سلك القضاء — دورة مقبلة',m:'المغرب • وزارة العدل / المجلس الأعلى للسلطة القضائية',b:'مباراة',ic:'fa-balance-scale'},
+{t:'مباراة توظيف أطر إدارية وقانونية',m:'المغرب • إدارات ومؤسسات عمومية',b:'مباراة',ic:'fa-briefcase'},
+{t:'مباريات ولوج سلك الدراسات العليا / ماستر قانون',m:'جامعات مغربية • دراسات عليا',b:'دراسات عليا',ic:'fa-graduation-cap'}
+]
+};
+var currentUser=null;
+function listHTML(a){return a.map(function(x){return '<div class="list-item" style="cursor:pointer" onclick="openRef(this)"><div class="ico"><i class="fas '+x.ic+'"></i></div><div style="flex:1"><h4>'+x.t+'</h4><div class="meta">'+x.m+'</div><span class="badge">'+x.b+'</span><div style="margin-top:10px"><button type="button" class="btn btn-gold" style="padding:6px 12px;font-size:.78rem" onclick="event.stopPropagation();openRef(this)"><i class="fas fa-download"></i> عرض / تحميل</button></div></div></div>'}).join('')}
+function openRef(el){
+  if(!currentUser){
+    alert('للوصول إلى نص المرجع أو تحميله:\n1) سجّل الدخول من زر «دخول»\n2) بعد نشر المنصة على الخادم يصبح التحميل من ملفات PDF الحقيقية.\n\nهذه المعاينة تعرض العناوين والتصنيف فقط.');
+    show('auth');
+    return;
+  }
+  alert('مرحباً '+currentUser.name+'\n\nفي النسخة المنشورة على الخادم سيتم فتح أو تحميل ملف PDF المرتبط بهذا المرجع.\n\nالمعاينة الحالية لا تستضيف ملفات PDF كاملة.');
+}
+function hideAll(){document.getElementById('view-home').style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('show')})}
+function show(n){hideAll();var e=document.getElementById('view-'+n);if(e)e.classList.add('show');
+if(n==='library')libTab(null,'laws');
+if(n==='jur')document.getElementById('jur-list').innerHTML=listHTML(DATA.jur);
+if(n==='lectures'){document.getElementById('lec-ped').innerHTML=listHTML(DATA.pedagogy||[]);document.getElementById('lec-work').innerHTML=listHTML(DATA.workshops||[]);}
+if(n==='annonces'){document.getElementById('ann-conf').innerHTML=listHTML(DATA.conferences||[]);document.getElementById('ann-comp').innerHTML=listHTML(DATA.competitions||[]);}
+window.scrollTo(0,0)}
+function goHome(){document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('show')});document.getElementById('view-home').style.display='block';window.scrollTo(0,0)}
+function libTab(btn,key){if(btn){document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on')});btn.classList.add('on')}document.getElementById('lib-list').innerHTML=listHTML(DATA[key]||[])}
+function toggleAuth(isLogin){document.getElementById('form-login').style.display=isLogin?'block':'none';document.getElementById('form-register').style.display=isLogin?'none':'block';document.getElementById('auth-title').textContent=isLogin?'تسجيل الدخول':'إنشاء حساب جديد';document.getElementById('auth-sub').textContent=isLogin?'للأعضاء — تحميل المراجع':'أنشئ حساباً للوصول للتحميلات'}
+function doLogin(){var email=document.getElementById('login-email').value.trim();if(!email){alert('أدخل البريد');return}currentUser={name:email.split('@')[0],email:email,role:email.indexOf('admin')>=0?'admin':'user'};applyUser();alert('تم الدخول (معاينة)');if(currentUser.role==='admin')show('admin');else goHome()}
+function doRegister(){var name=document.getElementById('reg-name').value.trim(),email=document.getElementById('reg-email').value.trim();if(!name||!email){alert('أكمل البيانات');return}currentUser={name:name,email:email,role:'user'};applyUser();alert('تم إنشاء الحساب (معاينة)');goHome()}
+function applyUser(){if(!currentUser)return;document.getElementById('user-chip').style.display='flex';document.getElementById('user-name').textContent=currentUser.name;document.getElementById('user-av').textContent=currentUser.name.charAt(0);document.getElementById('btn-login-top').style.display='none';if(currentUser.role==='admin')document.getElementById('btn-admin-top').style.display='inline-flex'}
+function sendMsg(e){e.preventDefault();var input=document.getElementById('chat-in'),q=input.value.trim();if(!q)return false;var log=document.getElementById('chat-log');log.innerHTML+='<div class="bubble user">'+q.replace(/</g,'&lt;')+'</div>';input.value='';setTimeout(function(){log.innerHTML+='<div class="bubble bot">بخصوص «'+q.replace(/</g,'&lt;')+'»: هذه معاينة للواجهة. بعد النشر سيتم الربط بالقوانين والاجتهادات الحقيقية ونموذج الذكاء الاصطناعي.</div>';log.scrollTop=log.scrollHeight},500);return false}
+</script>
+</body>
+</html>
