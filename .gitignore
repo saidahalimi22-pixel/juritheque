@@ -1,0 +1,6 @@
+node_modules
+public
+backend/dist
+backend/uploads
+.env
+.vercel

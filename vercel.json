@@ -1,6 +1,16 @@
 {
-  "version": 2,
-  "routes": [
-    { "src": "/(.*)", "dest": "index.js" }
-  ]
+  "framework": null,
+  "installCommand": "npm install",
+  "buildCommand": "sh scripts/build.sh",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/health", "destination": "/api" }
+  ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30,
+      "includeFiles": "node_modules/.prisma/client/**"
+    }
+  }
 }
