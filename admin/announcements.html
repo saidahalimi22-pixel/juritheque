@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة الإعلانات | Jurithèque</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="logo-icon">J</div> Jurithèque</div>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html" class="active"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1>إدارة الإعلانات</h1>
+      <div class="topbar-actions">
+        <div class="user-info"></div>
+        <button class="btn btn-primary" onclick="window.__openForm()"><i class="fas fa-plus"></i> إضافة</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="card" id="form-card" style="display:none;">
+        <div class="card-header">
+          <h2 id="form-title">إضافة جديد</h2>
+          <button class="btn btn-sm btn-outline" onclick="window.__closeForm()">إغلاق</button>
+        </div>
+        <div class="card-body">
+          <form id="crud-form">
+            <input type="hidden" id="item-id">
+            <div class="form-grid">
+
+              <div class="form-group full"><label>العنوان *</label><input type="text" id="f-title" required></div>
+              <div class="form-group"><label>النوع</label><select id="f-type"><option value="competition">مسابقة</option><option value="job">توظيف</option><option value="seminar">ندوة</option><option value="training">تكوين</option><option value="conference">مؤتمر</option><option value="other">أخرى</option></select></div>
+              <div class="form-group"><label>الجهة</label><input type="text" id="f-organization"></div>
+              <div class="form-group"><label>المكان</label><input type="text" id="f-location"></div>
+              <div class="form-group"><label>تاريخ الحدث</label><input type="date" id="f-eventDate"></div>
+              <div class="form-group"><label>آخر أجل</label><input type="date" id="f-deadline"></div>
+              <div class="form-group"><label>منشور؟</label><select id="f-isPublished"><option value="true">نعم</option><option value="false">لا</option></select></div>
+              <div class="form-group"><label>رابط خارجي</label><input type="url" id="f-externalLink"></div>
+              <div class="form-group full"><label>الوصف</label><textarea id="f-description" rows="3"></textarea></div>
+
+              <div class="form-group">
+                <label>رفع ملف PDF (اختياري)</label>
+                <input type="file" id="f-file" accept=".pdf,application/pdf">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="save-btn"><i class="fas fa-save"></i> حفظ</button>
+              <button type="button" class="btn btn-outline" onclick="window.__closeForm()">إلغاء</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>القائمة</h2>
+          <span id="total-count" style="color:#6B7280;font-size:0.9rem"></span>
+        </div>
+        <div class="card-body">
+          <div class="filters">
+            <input type="text" id="search-q" placeholder="بحث...">
+            <button class="btn btn-outline" onclick="window.__loadItems()"><i class="fas fa-search"></i> بحث</button>
+          </div>
+          <table>
+            <thead><tr><th>العنوان</th><th>النوع</th><th>الجهة</th><th>آخر أجل</th><th>إجراءات</th></tr></thead>
+            <tbody id="items-tbody"><tr><td colspan="20" style="text-align:center;">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/crud-page.js"></script>
+  <script>
+    requireAuth(['admin', 'editor']);
+    renderUserBar();
+    const page = createCrudPage({
+      endpoint: '/announcements',
+      fields: [
+        { name: 'title' }, { name: 'type', default: 'other' }, { name: 'organization' },
+        { name: 'location' }, { name: 'eventDate', type: 'date' }, { name: 'deadline', type: 'date' },
+        { name: 'isPublished', default: 'true' }, { name: 'externalLink' }, { name: 'description' }
+      ],
+      columns: [
+        { key: 'title' }, { key: 'type' }, { key: 'organization' },
+        { key: 'deadline', type: 'date' }
+      ]
+    });
+    page.loadItems();
+  </script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم | Jurithèque</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo-icon">J</div>
+      Jurithèque
+    </div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="#"><i class="fas fa-cog"></i> الإعدادات</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <h1>لوحة التحكم</h1>
+      <div class="topbar-actions">
+        <div class="user-info">
+          <div class="user-avatar">أ</div>
+          <span>المسؤول</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="icon blue"><i class="fas fa-balance-scale"></i></div>
+          <div class="info">
+            <h3>248</h3>
+            <p>نص قانوني</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="icon gold"><i class="fas fa-gavel"></i></div>
+          <div class="info">
+            <h3>1,152</h3>
+            <p>اجتهاد قضائي</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="icon green"><i class="fas fa-book"></i></div>
+          <div class="info">
+            <h3>87</h3>
+            <p>كتاب ومقال</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="icon orange"><i class="fas fa-users"></i></div>
+          <div class="info">
+            <h3>1,420</h3>
+            <p>مستخدم</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header">
+          <h2>آخر الإضافات</h2>
+          <a href="#" class="btn btn-sm btn-outline">عرض الكل</a>
+        </div>
+        <div class="card-body" style="padding: 0;">
+          <table>
+            <thead>
+              <tr>
+                <th>العنوان</th>
+                <th>النوع</th>
+                <th>الحالة</th>
+                <th>التاريخ</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>تعديل قانون الإجراءات المدنية والإدارية</td>
+                <td>قانون</td>
+                <td><span class="badge badge-success">منشور</span></td>
+                <td>2025-10-28</td>
+                <td>
+                  <a href="#" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a>
+                </td>
+              </tr>
+              <tr>
+                <td>قرار المحكمة العليا رقم 1452/2025</td>
+                <td>اجتهاد</td>
+                <td><span class="badge badge-success">منشور</span></td>
+                <td>2025-10-26</td>
+                <td>
+                  <a href="#" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a>
+                </td>
+              </tr>
+              <tr>
+                <td>الحماية القانونية للمعطيات الشخصية</td>
+                <td>أطروحة</td>
+                <td><span class="badge badge-warning">مسودة</span></td>
+                <td>2025-10-25</td>
+                <td>
+                  <a href="#" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a>
+                </td>
+              </tr>
+              <tr>
+                <td>مسابقة الالتحاق بسلك القضاة 2025</td>
+                <td>إعلان</td>
+                <td><span class="badge badge-success">منشور</span></td>
+                <td>2025-10-24</td>
+                <td>
+                  <a href="#" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card">
+        <div class="card-header">
+          <h2>إجراءات سريعة</h2>
+        </div>
+        <div class="card-body">
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="laws.html" class="btn btn-primary"><i class="fas fa-plus"></i> إضافة قانون</a>
+            <a href="jurisprudence.html" class="btn btn-primary"><i class="fas fa-plus"></i> إضافة اجتهاد</a>
+            <a href="books.html" class="btn btn-outline"><i class="fas fa-plus"></i> إضافة كتاب</a>
+            <a href="announcements.html" class="btn btn-outline"><i class="fas fa-plus"></i> إضافة إعلان</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin', 'editor']);
+    renderUserBar();
+
+    async function loadStats() {
+      try {
+        const [laws, jur, books, users] = await Promise.all([
+          api.get('/laws?limit=1'),
+          api.get('/jurisprudence?limit=1'),
+          api.get('/books?limit=1'),
+          api.get('/users?limit=1').catch(() => ({ meta: { total: 0 } }))
+        ]);
+        const nums = document.querySelectorAll('.stat-card .info h3');
+        if (nums[0]) nums[0].textContent = laws.meta?.total ?? '—';
+        if (nums[1]) nums[1].textContent = jur.meta?.total ?? '—';
+        if (nums[2]) nums[2].textContent = books.meta?.total ?? '—';
+        if (nums[3]) nums[3].textContent = users.meta?.total ?? '—';
+      } catch (e) {
+        console.warn('Stats load failed (is backend running?)', e.message);
+      }
+    }
+    loadStats();
+  </script>
+</body>
+</html>

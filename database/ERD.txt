@@ -1,0 +1,65 @@
+============================================================
+Jurithèque - Entity Relationship Diagram (Text Version)
+============================================================
+
+[users]
+  │
+  ├──< created_by >── [laws]
+  ├──< created_by >── [books]
+  ├──< created_by >── [theses]
+  ├──< created_by >── [articles]
+  ├──< created_by >── [reports]
+  ├──< created_by >── [jurisprudence]
+  ├──< created_by >── [lectures]
+  ├──< created_by >── [announcements]
+  │
+  └──< user_id >── [chat_sessions]
+                        │
+                        └──< session_id >── [chat_messages]
+
+
+[categories]
+  │
+  ├── parent_id (self-reference for hierarchy)
+  │
+  ├──< category_id >── [laws]
+  ├──< category_id >── [books]
+  ├──< category_id >── [theses]
+  ├──< category_id >── [articles]
+  ├──< category_id >── [reports]
+  ├──< category_id >── [jurisprudence]
+  └──< category_id >── [lectures]
+
+
+[authors] ──────────< document_authors >────────── [books / theses / articles / reports]
+   (many-to-many via document_type + document_id)
+
+
+[tags] ─────────────< document_tags >───────────── [any document]
+   (many-to-many via document_type + document_id)
+
+
+[jurisprudence] ────< jurisprudence_laws >──────── [laws]
+   (many-to-many: ربط الأحكام بالقوانين)
+
+
+============================================================
+العلاقات الرئيسية:
+============================================================
+
+1. المستخدمون ينشئون المحتوى (created_by)
+2. التصنيفات هرمية (parent_id)
+3. المؤلفون مرتبطون بالكتب/الرسائل/المقالات عبر جدول وسيط
+4. الوسوم (Tags) مشتركة بين كل أنواع الوثائق
+5. الأحكام القضائية مرتبطة بالقوانين ذات الصلة
+6. جلسات المساعد الذكي تحتوي على رسائل
+
+============================================================
+ملاحظات تصميم:
+============================================================
+
+- استخدمنا UUID كمفاتيح أساسية (أفضل للتوزيع والأمان)
+- فهارس GIN للبحث النصي السريع (خصوصاً العربية)
+- مصفوفات PostgreSQL للكلمات المفتاحية (keywords TEXT[])
+- JSONB لمصادر إجابات المساعد الذكي
+- document_type + document_id لتجنب تكرار جداول وسيطة كثيرة

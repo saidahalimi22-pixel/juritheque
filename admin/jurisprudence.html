@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة الاجتهادات | Jurithèque</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="logo-icon">J</div> Jurithèque</div>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html" class="active"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>إدارة الاجتهادات القضائية</h1>
+      <div class="topbar-actions">
+        <div class="user-info"></div>
+        <button class="btn btn-primary" onclick="openForm()"><i class="fas fa-plus"></i> إضافة قرار</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="card" id="form-card" style="display:none;">
+        <div class="card-header">
+          <h2 id="form-title">إضافة اجتهاد قضائي</h2>
+          <button class="btn btn-sm btn-outline" onclick="closeForm()">إغلاق</button>
+        </div>
+        <div class="card-body">
+          <form id="jur-form">
+            <input type="hidden" id="jur-id">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>رقم القرار *</label>
+                <input type="text" id="decisionNumber" required placeholder="1452/2025">
+              </div>
+              <div class="form-group">
+                <label>تاريخ القرار</label>
+                <input type="date" id="decisionDate">
+              </div>
+              <div class="form-group">
+                <label>الجهة القضائية *</label>
+                <input type="text" id="court" required placeholder="المحكمة العليا">
+              </div>
+              <div class="form-group">
+                <label>الغرفة</label>
+                <input type="text" id="chamber" placeholder="الغرفة المدنية">
+              </div>
+              <div class="form-group full">
+                <label>موضوع القضية</label>
+                <input type="text" id="subject" placeholder="المسؤولية التقصيرية">
+              </div>
+              <div class="form-group full">
+                <label>ملخص</label>
+                <textarea id="summary" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label>رابط المصدر</label>
+                <input type="url" id="sourceUrl">
+              </div>
+              <div class="form-group">
+                <label>حالة النشر</label>
+                <select id="statusDoc">
+                  <option value="published">منشور</option>
+                  <option value="draft">مسودة</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="save-btn"><i class="fas fa-save"></i> حفظ</button>
+              <button type="button" class="btn btn-outline" onclick="closeForm()">إلغاء</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>قائمة الأحكام</h2>
+          <span id="total-count" style="color:#6B7280;font-size:0.9rem"></span>
+        </div>
+        <div class="card-body">
+          <div class="filters">
+            <input type="text" id="search-q" placeholder="رقم القرار أو الموضوع...">
+            <button class="btn btn-outline" onclick="loadItems()"><i class="fas fa-search"></i> بحث</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>رقم القرار</th>
+                <th>الموضوع</th>
+                <th>الجهة</th>
+                <th>الغرفة</th>
+                <th>التاريخ</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="items-tbody">
+              <tr><td colspan="6" style="text-align:center;color:#9CA3AF;">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin', 'editor']);
+    renderUserBar();
+
+    async function loadItems() {
+      const tbody = document.getElementById('items-tbody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">جاري التحميل...</td></tr>';
+      try {
+        const q = document.getElementById('search-q').value.trim();
+        let url = '/jurisprudence?limit=50';
+        if (q) url += '&q=' + encodeURIComponent(q);
+        const res = await api.get(url);
+        document.getElementById('total-count').textContent = (res.meta?.total || 0) + ' قرار';
+        if (!res.data?.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#9CA3AF;">لا توجد نتائج</td></tr>';
+          return;
+        }
+        window._cache = res.data;
+        tbody.innerHTML = res.data.map(function(item) {
+          return '<tr>' +
+            '<td>' + escapeHtml(item.decisionNumber) + '</td>' +
+            '<td>' + escapeHtml(item.subject || '—') + '</td>' +
+            '<td>' + escapeHtml(item.court) + '</td>' +
+            '<td>' + escapeHtml(item.chamber || '—') + '</td>' +
+            '<td>' + (item.decisionDate ? item.decisionDate.substring(0, 10) : '—') + '</td>' +
+            '<td>' +
+              '<button class="btn btn-sm btn-outline" onclick="editById(\'' + item.id + '\')"><i class="fas fa-edit"></i></button> ' +
+              '<button class="btn btn-sm btn-outline" style="color:#EF4444" onclick="deleteItem(\'' + item.id + '\')"><i class="fas fa-trash"></i></button>' +
+            '</td></tr>';
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6" style="color:#EF4444;text-align:center;">' + err.message + '</td></tr>';
+      }
+    }
+
+    function openForm(item) {
+      document.getElementById('form-card').style.display = 'block';
+      document.getElementById('form-title').textContent = item ? 'تعديل قرار' : 'إضافة اجتهاد قضائي';
+      document.getElementById('jur-id').value = item ? item.id : '';
+      document.getElementById('decisionNumber').value = item ? item.decisionNumber : '';
+      document.getElementById('decisionDate').value = item && item.decisionDate ? item.decisionDate.substring(0, 10) : '';
+      document.getElementById('court').value = item ? item.court : '';
+      document.getElementById('chamber').value = item && item.chamber ? item.chamber : '';
+      document.getElementById('subject').value = item && item.subject ? item.subject : '';
+      document.getElementById('summary').value = item && item.summary ? item.summary : '';
+      document.getElementById('sourceUrl').value = item && item.sourceUrl ? item.sourceUrl : '';
+      document.getElementById('statusDoc').value = item ? item.statusDoc : 'published';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function closeForm() {
+      document.getElementById('form-card').style.display = 'none';
+      document.getElementById('jur-form').reset();
+      document.getElementById('jur-id').value = '';
+    }
+
+    function editById(id) {
+      const item = (window._cache || []).find(function(x) { return x.id === id; });
+      if (item) openForm(item);
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('هل أنت متأكد من الحذف؟')) return;
+      try {
+        await api.delete('/jurisprudence/' + id);
+        showAlert('تم الحذف');
+        loadItems();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      }
+    }
+
+    document.getElementById('jur-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      const id = document.getElementById('jur-id').value;
+      const payload = {
+        decisionNumber: document.getElementById('decisionNumber').value.trim(),
+        decisionDate: document.getElementById('decisionDate').value || null,
+        court: document.getElementById('court').value.trim(),
+        chamber: document.getElementById('chamber').value.trim() || null,
+        subject: document.getElementById('subject').value.trim() || null,
+        summary: document.getElementById('summary').value.trim() || null,
+        sourceUrl: document.getElementById('sourceUrl').value.trim() || null,
+        statusDoc: document.getElementById('statusDoc').value
+      };
+      try {
+        if (id) {
+          await api.put('/jurisprudence/' + id, payload);
+          showAlert('تم التحديث');
+        } else {
+          await api.post('/jurisprudence', payload);
+          showAlert('تم الإضافة');
+        }
+        closeForm();
+        loadItems();
+      } catch (err) {
+        showAlert(err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    loadItems();
+  </script>
+</body>
+</html>
