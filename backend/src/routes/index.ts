@@ -6,6 +6,7 @@ import authRoutes from './auth.js';
 import assistantRoutes from './assistant.js';
 import searchRoutes from './search.js';
 import uploadRoutes from './upload.js';
+import consultationRoutes from './consultations.js';
 
 const router = Router();
 
@@ -15,6 +16,7 @@ router.use('/auth', authRoutes);
 // Search
 router.use('/search', searchRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/consultations', consultationRoutes);
 
 // Assistant
 router.use('/assistant', assistantRoutes);
@@ -23,7 +25,7 @@ router.use('/assistant', assistantRoutes);
 function mountCrud(
   path: string,
   model: any,
-  options: { searchFields?: string[]; defaultOrderBy?: any } = {}
+  options: { searchFields?: string[]; defaultOrderBy?: any; publicWhere?: Record<string, any> | null } = {}
 ) {
   const ctrl = createCrudController(model, options);
   const r = Router();
@@ -71,24 +73,29 @@ mountCrud('/lectures', prisma.lecture, {
 mountCrud('/announcements', prisma.announcement, {
   searchFields: ['title', 'organization'],
   defaultOrderBy: { createdAt: 'desc' },
+  publicWhere: { isPublished: true },
 });
 
 mountCrud('/categories', prisma.category, {
   searchFields: ['nameAr', 'nameFr', 'slug'],
   defaultOrderBy: { sortOrder: 'asc' },
+  publicWhere: null,
 });
 
 mountCrud('/authors', prisma.author, {
   searchFields: ['fullName', 'affiliation'],
+  publicWhere: null,
 });
 
 mountCrud('/tags', prisma.tag, {
   searchFields: ['name', 'slug'],
+  publicWhere: null,
 });
 
 // Users (admin only for list/update)
 const usersCtrl = createCrudController(prisma.user, {
   searchFields: ['fullName', 'email'],
+  publicWhere: null,
 });
 const usersRouter = Router();
 usersRouter.get('/', authenticate, requireRole('admin'), usersCtrl.list);

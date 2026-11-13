@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>طلبات الاستشارة | Jurithèque</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="logo-icon">J</div> Jurithèque</div>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <a href="consultations.html" class="active"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1>طلبات الاستشارة</h1>
+      <div class="topbar-actions"><div class="user-info"></div></div>
+    </div>
+    <div class="content">
+      <div class="card">
+        <div class="card-header">
+          <h2>الطلبات الواردة</h2>
+          <span id="total-count" style="color:#6B7280;font-size:0.9rem"></span>
+        </div>
+        <div class="card-body">
+          <div class="filters">
+            <select id="status-filter" onchange="loadItems()">
+              <option value="">كل الحالات</option>
+              <option value="new">جديد</option>
+              <option value="in_progress">قيد المعالجة</option>
+              <option value="answered">تمت الإجابة</option>
+              <option value="closed">مغلق</option>
+            </select>
+          </div>
+          <div id="list"><p style="text-align:center">جاري التحميل...</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script>
+    const me = requireAuth(['admin', 'editor']);
+    renderUserBar();
+    const LABELS = { new: 'جديد', in_progress: 'قيد المعالجة', answered: 'تمت الإجابة', closed: 'مغلق' };
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    async function loadItems() {
+      const st = document.getElementById('status-filter').value;
+      const box = document.getElementById('list');
+      try {
+        const r = await api.get('/consultations?limit=100' + (st ? '&status=' + st : ''));
+        document.getElementById('total-count').textContent = r.meta.total + ' طلب';
+        if (!r.data.length) { box.innerHTML = '<p style="text-align:center">لا توجد طلبات.</p>'; return; }
+        box.innerHTML = r.data.map(c => `
+          <div style="border:1px solid #E5E7EB;border-radius:10px;padding:14px;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+              <strong>${esc(c.fullName)}</strong>
+              <span style="color:#6B7280;font-size:.85rem">${new Date(c.createdAt).toLocaleString('ar-MA')}</span>
+            </div>
+            <div style="margin:6px 0;color:#374151;font-size:.9rem">
+              <a href="mailto:${esc(c.email)}">${esc(c.email)}</a>${c.phone ? ' • ' + esc(c.phone) : ''} • <b>${esc(c.topic)}</b>
+            </div>
+            <p style="white-space:pre-wrap;background:#F9FAFB;border-radius:8px;padding:10px;margin:8px 0">${esc(c.body)}</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <select onchange="setStatus('${c.id}', this.value)">
+                ${Object.keys(LABELS).map(k => `<option value="${k}" ${c.status === k ? 'selected' : ''}>${LABELS[k]}</option>`).join('')}
+              </select>
+              ${me && me.role === 'admin' ? `<button class="btn btn-sm btn-outline" onclick="del('${c.id}')"><i class="fas fa-trash"></i> حذف</button>` : ''}
+            </div>
+          </div>`).join('');
+      } catch (e) { box.innerHTML = '<p style="text-align:center">' + esc(e.message) + '</p>'; }
+    }
+    async function setStatus(id, status) {
+      try { await api.put('/consultations/' + id, { status }); showAlert('تم التحديث'); }
+      catch (e) { showAlert(e.message, 'error'); }
+    }
+    async function del(id) {
+      if (!confirm('حذف هذا الطلب نهائياً؟')) return;
+      try { await api.delete('/consultations/' + id); loadItems(); }
+      catch (e) { showAlert(e.message, 'error'); }
+    }
+    loadItems();
+  </script>
+</body>
+</html>

@@ -13,31 +13,66 @@ type PrismaDelegate = {
 interface CrudOptions {
   searchFields?: string[];
   defaultOrderBy?: Record<string, 'asc' | 'desc'>;
-  publishedOnlyForPublic?: boolean;
+  /** شرط ما يراه الزوار والأعضاء (null = كل شيء ظاهر للجميع) */
+  publicWhere?: Record<string, any> | null;
+}
+
+const DEFAULT_PUBLIC = { statusDoc: 'published' };
+
+function isStaff(req: AuthRequest) {
+  return !!req.user && ['admin', 'editor'].includes(req.user.role);
+}
+
+/** تنظيف البيانات القادمة من لوحة الإدارة قبل إرسالها لقاعدة البيانات */
+function sanitize(body: any) {
+  const data: any = { ...body };
+  delete data.id;
+  delete data.createdAt;
+  delete data.updatedAt;
+  delete data.passwordHash;
+  for (const key of Object.keys(data)) {
+    const v = data[key];
+    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      data[key] = new Date(v + 'T00:00:00.000Z');
+    }
+    if (key === 'keywords' && typeof v === 'string') {
+      data[key] = v.split(/[,،]/).map((s) => s.trim()).filter(Boolean);
+    }
+  }
+  return data;
 }
 
 export function createCrudController(model: PrismaDelegate, options: CrudOptions = {}) {
   const {
     searchFields = ['title'],
     defaultOrderBy = { createdAt: 'desc' },
-    publishedOnlyForPublic = true,
+    publicWhere = DEFAULT_PUBLIC,
   } = options;
 
+  // رابط الملف لا يُرسل إلا للمستخدمين المسجلين
+  const scrub = (req: AuthRequest, item: any) => {
+    if (item && 'passwordHash' in item) {
+      const { passwordHash, ...safe } = item;
+      item = safe;
+    }
+    if (req.user || !item || !('fileUrl' in item)) return item;
+    const { fileUrl, ...rest } = item;
+    return { ...rest, hasFile: !!fileUrl };
+  };
+
   return {
-    // GET / → list with pagination & search
+    // GET / → قائمة مع بحث وترقيم
     async list(req: AuthRequest, res: Response) {
       try {
         const page = Math.max(1, parseInt(req.query.page as string) || 1);
         const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
         const search = (req.query.q as string) || '';
-        const statusDoc = req.query.status as string;
-
         const where: any = {};
 
-        if (publishedOnlyForPublic && (!req.user || req.user.role === 'visitor')) {
-          where.statusDoc = 'published';
-        } else if (statusDoc) {
-          where.statusDoc = statusDoc;
+        if (!isStaff(req) && publicWhere) {
+          Object.assign(where, publicWhere);
+        } else if (req.query.status && publicWhere && 'statusDoc' in publicWhere) {
+          where.statusDoc = req.query.status as string;
         }
 
         if (search && searchFields.length) {
@@ -45,12 +80,7 @@ export function createCrudController(model: PrismaDelegate, options: CrudOptions
             [field]: { contains: search, mode: 'insensitive' },
           }));
         }
-
-        // Extra filters from query
         if (req.query.categoryId) where.categoryId = req.query.categoryId;
-        if (req.query.year) {
-          // handled per model if needed
-        }
 
         const [items, total] = await Promise.all([
           model.findMany({
@@ -63,13 +93,8 @@ export function createCrudController(model: PrismaDelegate, options: CrudOptions
         ]);
 
         res.json({
-          data: items,
-          meta: {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit),
-          },
+          data: items.map((i) => scrub(req, i)),
+          meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
         });
       } catch (error: any) {
         console.error(error);
@@ -82,7 +107,12 @@ export function createCrudController(model: PrismaDelegate, options: CrudOptions
       try {
         const item = await model.findUnique({ where: { id: req.params.id } });
         if (!item) return res.status(404).json({ error: 'العنصر غير موجود' });
-        res.json(item);
+        if (!isStaff(req) && publicWhere) {
+          for (const [k, v] of Object.entries(publicWhere)) {
+            if (k in item && item[k] !== v) return res.status(404).json({ error: 'العنصر غير موجود' });
+          }
+        }
+        res.json(scrub(req, item));
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
@@ -91,9 +121,8 @@ export function createCrudController(model: PrismaDelegate, options: CrudOptions
     // POST /
     async create(req: AuthRequest, res: Response) {
       try {
-        const data = { ...req.body };
+        const data = sanitize(req.body);
         if (req.user) data.createdById = req.user.id;
-
         const item = await model.create({ data });
         res.status(201).json(item);
       } catch (error: any) {
@@ -107,7 +136,7 @@ export function createCrudController(model: PrismaDelegate, options: CrudOptions
       try {
         const item = await model.update({
           where: { id: req.params.id },
-          data: req.body,
+          data: sanitize(req.body),
         });
         res.json(item);
       } catch (error: any) {

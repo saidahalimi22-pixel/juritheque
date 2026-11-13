@@ -414,3 +414,21 @@ model ChatMessage {
 
   @@map("chat_messages")
 }
+
+
+// ==================== الاستشارات القانونية ====================
+model Consultation {
+  id        String   @id @default(uuid())
+  fullName  String   @map("full_name")
+  email     String
+  phone     String?
+  topic     String
+  body      String
+  status    String   @default("new")
+  adminNote String?  @map("admin_note")
+  userId    String?  @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("consultations")
+}

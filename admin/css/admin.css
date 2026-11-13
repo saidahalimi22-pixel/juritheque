@@ -385,3 +385,15 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== الهاتف: قائمة جانبية قابلة للفتح وجداول قابلة للتمرير ===== */
+.menu-toggle { display: none; background: var(--primary, #0B1C3D); color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; font-size: 1.1rem; cursor: pointer; }
+@media (max-width: 900px) {
+  .menu-toggle { display: inline-block; }
+  .sidebar { z-index: 1000; transition: transform .2s; }
+  .sidebar.open { transform: translateX(0); }
+  .card-body { overflow-x: auto; }
+  .topbar { flex-wrap: wrap; gap: 8px; }
+  .content { padding: 12px; }
+  table { min-width: 560px; }
+}

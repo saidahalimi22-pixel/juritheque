@@ -115,3 +115,18 @@ window.api = api;
 window.requireAuth = requireAuth;
 window.showAlert = showAlert;
 window.renderUserBar = renderUserBar;
+
+// زر القائمة على الهاتف
+document.addEventListener('DOMContentLoaded', () => {
+  const sidebar = document.querySelector('.sidebar');
+  const topbar = document.querySelector('.topbar');
+  if (!sidebar || !topbar) return;
+  const btn = document.createElement('button');
+  btn.className = 'menu-toggle';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'القائمة');
+  btn.innerHTML = '<i class="fas fa-bars"></i>';
+  btn.onclick = () => sidebar.classList.toggle('open');
+  topbar.insertBefore(btn, topbar.firstChild);
+  sidebar.addEventListener('click', (e) => { if (e.target.closest('a')) sidebar.classList.remove('open'); });
+});

@@ -128,19 +128,12 @@ router.post('/ask', optionalAuth, async (req: AuthRequest, res: Response) => {
       console.warn('AI call failed, using fallback:', aiError.message);
 
       if (sources.length === 0) {
-        answer =
-          'لم أجد مصادر مباشرة في قاعدة البيانات حول هذا السؤال. ' +
-          'يرجى إضافة محتوى (قوانين / اجتهادات) أو ضبط AI_API_KEY في ملف .env.\n\n' +
-          'تفاصيل: ' + aiError.message;
+        answer = 'لم أجد في المنصة مصادر مرتبطة بسؤالك حالياً. يمكنك إرسال طلب استشارة قانونية من الصفحة الرئيسية.';
       } else {
         const list = sources
-          .map((s, i) => (i + 1) + '. [' + s.type + '] ' + s.title + (s.ref ? ' (' + s.ref + ')' : ''))
+          .map((s, i) => (i + 1) + '. ' + s.title + (s.ref ? ' (' + s.ref + ')' : ''))
           .join('\n');
-        answer =
-          'تم استرجاع ' + sources.length + ' مصدر(s) من المنصة:\n\n' + list + '\n\n' +
-          'لم يتم توليد إجابة مفصلة لأن نموذج الذكاء الاصطناعي غير مفعّل.\n' +
-          '(' + aiError.message + ')\n\n' +
-          'أضف AI_API_KEY في backend/.env ثم أعد تشغيل الخادم.';
+        answer = 'هذه أقرب المصادر المتوفرة في المنصة لسؤالك:\n\n' + list + '\n\nملاحظة: توليد إجابة مفصلة غير مفعّل حالياً.';
       }
     }
 

@@ -27,6 +27,7 @@
       <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
       <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
       <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
 
       <div class="sidebar-section">النظام</div>
       <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
@@ -85,7 +86,7 @@
       <div class="card">
         <div class="card-header">
           <h2>آخر الإضافات</h2>
-          <a href="#" class="btn btn-sm btn-outline">عرض الكل</a>
+          <a href="laws.html" class="btn btn-sm btn-outline">عرض الكل</a>
         </div>
         <div class="card-body" style="padding: 0;">
           <table>
@@ -98,44 +99,7 @@
                 <th>إجراءات</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>تعديل قانون الإجراءات المدنية والإدارية</td>
-                <td>قانون</td>
-                <td><span class="badge badge-success">منشور</span></td>
-                <td>2025-10-28</td>
-                <td>
-                  <a href="#" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a>
-                </td>
-              </tr>
-              <tr>
-                <td>قرار المحكمة العليا رقم 1452/2025</td>
-                <td>اجتهاد</td>
-                <td><span class="badge badge-success">منشور</span></td>
-                <td>2025-10-26</td>
-                <td>
-                  <a href="#" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a>
-                </td>
-              </tr>
-              <tr>
-                <td>الحماية القانونية للمعطيات الشخصية</td>
-                <td>أطروحة</td>
-                <td><span class="badge badge-warning">مسودة</span></td>
-                <td>2025-10-25</td>
-                <td>
-                  <a href="#" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a>
-                </td>
-              </tr>
-              <tr>
-                <td>مسابقة الالتحاق بسلك القضاة 2025</td>
-                <td>إعلان</td>
-                <td><span class="badge badge-success">منشور</span></td>
-                <td>2025-10-24</td>
-                <td>
-                  <a href="#" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a>
-                </td>
-              </tr>
-            </tbody>
+            <tbody id="recent-tbody"><tr><td colspan="5" style="text-align:center;">جاري التحميل...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -181,6 +145,32 @@
       }
     }
     loadStats();
+
+    async function loadRecent() {
+      const sources = [
+        ['/laws', 'قانون', 'laws.html'], ['/jurisprudence', 'اجتهاد', 'jurisprudence.html'],
+        ['/books', 'كتاب', 'books.html'], ['/theses', 'أطروحة', 'theses.html'],
+        ['/articles', 'مقال', 'articles.html'], ['/lectures', 'محاضرة', 'lectures.html'],
+        ['/announcements', 'إعلان', 'announcements.html']
+      ];
+      const tb = document.getElementById('recent-tbody');
+      try {
+        const res = await Promise.all(sources.map(s => api.get(s[0] + '?limit=5').catch(() => ({ data: [] }))));
+        let rows = [];
+        res.forEach((r, i) => (r.data || []).forEach(x => rows.push({
+          title: x.title || x.subject || x.decisionNumber || '—', kind: sources[i][1], page: sources[i][2],
+          published: x.statusDoc ? x.statusDoc === 'published' : !!x.isPublished, date: x.createdAt
+        })));
+        rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+        rows = rows.slice(0, 8);
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد إضافات بعد. ابدأ بإضافة قانون أو كتاب.</td></tr>'; return; }
+        const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        tb.innerHTML = rows.map(r => '<tr><td>' + esc(r.title) + '</td><td>' + r.kind + '</td><td><span class="badge ' +
+          (r.published ? 'badge-success">منشور' : 'badge-warning">مسودة') + '</span></td><td>' +
+          new Date(r.date).toISOString().slice(0, 10) + '</td><td><a href="' + r.page + '" class="btn btn-sm btn-outline"><i class="fas fa-edit"></i></a></td></tr>').join('');
+      } catch (e) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;">تعذر التحميل</td></tr>'; }
+    }
+    loadRecent();
   </script>
 </body>
 </html>
