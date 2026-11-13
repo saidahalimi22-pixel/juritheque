@@ -102,6 +102,18 @@ button,input{font-family:inherit}
 .user-chip .av{width:28px;height:28px;background:var(--gold);color:var(--royal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem}
 .footer-note{text-align:center;padding:20px 16px;color:var(--muted);font-size:.8rem}
 .empty{text-align:center;color:var(--muted);padding:22px 8px;font-size:.92rem}
+
+.topbar{height:auto;min-height:64px;flex-wrap:wrap;gap:8px;padding-top:8px;padding-bottom:8px}
+.top-actions{flex-wrap:wrap;justify-content:flex-end;min-width:0}
+@media(max-width:480px){.user-chip span{display:none}.user-chip{padding:4px}.top-actions .btn{padding:7px 10px;font-size:.78rem}}
+html,body{max-width:100%;overflow-x:hidden}
+.site-footer{background:var(--royal-deep);color:#cbd5e1;margin-top:28px;padding:28px 18px 14px;font-size:.88rem}
+.sf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px;max-width:960px;margin:0 auto}
+.site-footer h4{color:var(--gold);margin-bottom:10px;font-size:.95rem}
+.site-footer p{line-height:1.8;margin:0}
+.site-footer a{display:block;color:#e2e8f0;text-decoration:none;padding:3px 0;cursor:pointer}
+.site-footer a:hover{color:var(--gold-bright)}
+.sf-copy{border-top:1px solid rgba(255,255,255,.12);margin:20px auto 0;padding-top:12px;text-align:center;font-size:.78rem;max-width:960px;color:#94a3b8}
 </style>
 </head>
 <body>
@@ -143,7 +155,6 @@ button,input{font-family:inherit}
     <div class="card" onclick="show('auth')"><div class="card-icon"><i class="fas fa-user-lock"></i></div><h3>حسابي</h3><p>تسجيل ودخول الأعضاء</p></div>
   </div>
 </div>
-<div class="footer-note">Jurithèque — منصة للأبحاث والدراسات القانونية</div>
 </div>
 
 <div class="panel" id="view-library">
@@ -246,8 +257,35 @@ button,input{font-family:inherit}
   </div>
 </div>
 
+
+<footer class="site-footer">
+  <div class="sf-grid">
+    <div>
+      <h4>Jurithèque</h4>
+      <p>منصة للأبحاث والدراسات القانونية: تشريعات واجتهادات ومراجع وتكوينات.</p>
+    </div>
+    <div>
+      <h4>روابط سريعة</h4>
+      <a onclick="show('library')">المكتبة القانونية</a>
+      <a onclick="show('jur')">الاجتهادات</a>
+      <a onclick="show('lectures')">التكوينات</a>
+      <a onclick="show('annonces')">الإعلانات</a>
+    </div>
+    <div>
+      <h4>اتصل بنا</h4>
+      <a onclick="show('consult')"><i class="fas fa-comments"></i> أرسل طلب استشارة</a>
+      <div id="contact-lines"></div>
+    </div>
+  </div>
+  <div class="sf-copy">
+    <div>© <span id="foot-year"></span> Jurithèque — جميع الحقوق محفوظة</div>
+    <div style="margin-top:4px">المحتوى المنشور للإعلام والبحث العلمي، ولا يعدّ استشارة قانونية ملزمة.</div>
+  </div>
+</footer>
 <script>
 var API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'http://localhost:4000/api' : location.origin + '/api';
+/* ===== بيانات الاتصال (اتركها فارغة لإخفائها) ===== */
+var CONTACT = { email: '', phone: '', address: '' };
 var currentUser = null, ITEMS = {}, SESSION = null;
 var DEG = { licence: 'إجازة', master: 'ماستر', phd: 'دكتوراه', other: 'أطروحة' };
 
@@ -414,7 +452,16 @@ function loadStats() {
     document.getElementById('st-lec').textContent = n[6];
   });
 }
+function renderFooter() {
+  document.getElementById('foot-year').textContent = new Date().getFullYear();
+  var box = document.getElementById('contact-lines'), out = '';
+  if (CONTACT.email) out += '<a href="mailto:' + esc(CONTACT.email) + '"><i class="fas fa-envelope"></i> ' + esc(CONTACT.email) + '</a>';
+  if (CONTACT.phone) out += '<a href="tel:' + esc(CONTACT.phone.replace(/\s+/g, '')) + '"><i class="fas fa-phone"></i> <span dir="ltr">' + esc(CONTACT.phone) + '</span></a>';
+  if (CONTACT.address) out += '<p style="margin-top:6px"><i class="fas fa-map-marker-alt"></i> ' + esc(CONTACT.address) + '</p>';
+  box.innerHTML = out;
+}
 (function init() {
+  renderFooter();
   try { currentUser = JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { currentUser = null; }
   if (!localStorage.getItem('token')) currentUser = null;
   applyUser();
