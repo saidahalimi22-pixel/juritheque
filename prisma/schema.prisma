@@ -1,0 +1,431 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  visitor
+  subscriber
+  lawyer
+  editor
+  admin
+}
+
+enum DocumentStatus {
+  draft
+  published
+  archived
+}
+
+enum LawStatus {
+  sari
+  mulgha
+  muaddal
+  mutammam
+}
+
+enum DegreeType {
+  licence
+  master
+  phd
+  other
+}
+
+enum LectureType {
+  lecture
+  course
+  workshop
+  seminar
+}
+
+enum AnnouncementType {
+  competition
+  job
+  seminar
+  training
+  conference
+  other
+}
+
+enum CategoryType {
+  law
+  jurisprudence
+  book
+  thesis
+  article
+  report
+  lecture
+  announcement
+  general
+}
+
+// ==================== MODELS ====================
+
+model User {
+  id              String    @id @default(uuid())
+  fullName        String    @map("full_name")
+  email           String    @unique
+  passwordHash    String    @map("password_hash")
+  role            UserRole  @default(visitor)
+  phone           String?
+  avatarUrl       String?   @map("avatar_url")
+  bio             String?
+  isActive        Boolean   @default(true) @map("is_active")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  lawsCreated           Law[]            @relation("LawCreatedBy")
+  booksCreated          Book[]           @relation("BookCreatedBy")
+  thesesCreated         Thesis[]         @relation("ThesisCreatedBy")
+  articlesCreated       Article[]        @relation("ArticleCreatedBy")
+  reportsCreated        Report[]         @relation("ReportCreatedBy")
+  jurisprudenceCreated  Jurisprudence[]  @relation("JurisprudenceCreatedBy")
+  lecturesCreated       Lecture[]        @relation("LectureCreatedBy")
+  announcementsCreated  Announcement[]   @relation("AnnouncementCreatedBy")
+  chatSessions          ChatSession[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String       @id @default(uuid())
+  nameAr      String       @map("name_ar")
+  nameFr      String?      @map("name_fr")
+  slug        String       @unique
+  description String?
+  parentId    String?      @map("parent_id")
+  type        CategoryType @default(general)
+  sortOrder   Int          @default(0) @map("sort_order")
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  laws           Law[]
+  books          Book[]
+  theses         Thesis[]
+  articles       Article[]
+  reports        Report[]
+  jurisprudence  Jurisprudence[]
+  lectures       Lecture[]
+
+  @@map("categories")
+}
+
+model Author {
+  id          String   @id @default(uuid())
+  fullName    String   @map("full_name")
+  fullNameFr  String?  @map("full_name_fr")
+  affiliation String?
+  bio         String?
+  email       String?
+  orcid       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  documentAuthors DocumentAuthor[]
+
+  @@map("authors")
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  documentTags DocumentTag[]
+
+  @@map("tags")
+}
+
+model Law {
+  id                String         @id @default(uuid())
+  title             String
+  officialNumber    String?        @map("official_number")
+  publicationDate   DateTime?      @map("publication_date") @db.Date
+  lastAmendmentDate DateTime?      @map("last_amendment_date") @db.Date
+  status            LawStatus      @default(sari)
+  categoryId        String?        @map("category_id")
+  summary           String?
+  fullText          String?        @map("full_text")
+  fileUrl           String?        @map("file_url")
+  sourceUrl         String?        @map("source_url")
+  language          String         @default("ar")
+  pagesCount        Int?           @map("pages_count")
+  statusDoc         DocumentStatus @default(published) @map("status_doc")
+  viewsCount        Int            @default(0) @map("views_count")
+  createdById       String?        @map("created_by")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  category          Category?           @relation(fields: [categoryId], references: [id])
+  createdBy         User?               @relation("LawCreatedBy", fields: [createdById], references: [id])
+  jurisprudenceLaws JurisprudenceLaw[]
+
+  @@map("laws")
+}
+
+model Book {
+  id               String         @id @default(uuid())
+  title            String
+  subtitle         String?
+  publisher        String?
+  publicationYear  Int?           @map("publication_year")
+  isbn             String?
+  edition          String?
+  categoryId       String?        @map("category_id")
+  description      String?
+  fileUrl          String?        @map("file_url")
+  coverUrl         String?        @map("cover_url")
+  pagesCount       Int?           @map("pages_count")
+  language         String         @default("ar")
+  accessLevel      String         @default("public") @map("access_level")
+  statusDoc        DocumentStatus @default(published) @map("status_doc")
+  viewsCount       Int            @default(0) @map("views_count")
+  downloadsCount   Int            @default(0) @map("downloads_count")
+  createdById      String?        @map("created_by")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  category  Category? @relation(fields: [categoryId], references: [id])
+  createdBy User?     @relation("BookCreatedBy", fields: [createdById], references: [id])
+
+  @@map("books")
+}
+
+model Thesis {
+  id              String         @id @default(uuid())
+  title           String
+  degree          DegreeType
+  university      String
+  faculty         String?
+  defenseYear     Int?           @map("defense_year")
+  defenseDate     DateTime?      @map("defense_date") @db.Date
+  abstract        String?
+  keywords        String[]
+  categoryId      String?        @map("category_id")
+  fileUrl         String?        @map("file_url")
+  pagesCount      Int?           @map("pages_count")
+  language        String         @default("ar")
+  statusDoc       DocumentStatus @default(published) @map("status_doc")
+  viewsCount      Int            @default(0) @map("views_count")
+  downloadsCount  Int            @default(0) @map("downloads_count")
+  createdById     String?        @map("created_by")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  category  Category? @relation(fields: [categoryId], references: [id])
+  createdBy User?     @relation("ThesisCreatedBy", fields: [createdById], references: [id])
+
+  @@map("theses")
+}
+
+model Article {
+  id               String         @id @default(uuid())
+  title            String
+  journalName      String?        @map("journal_name")
+  volume           String?
+  issue            String?
+  publicationYear  Int?           @map("publication_year")
+  pages            String?
+  doi              String?
+  abstract         String?
+  keywords         String[]
+  categoryId       String?        @map("category_id")
+  fileUrl          String?        @map("file_url")
+  isOpenAccess     Boolean        @default(false) @map("is_open_access")
+  language         String         @default("ar")
+  statusDoc        DocumentStatus @default(published) @map("status_doc")
+  viewsCount       Int            @default(0) @map("views_count")
+  downloadsCount   Int            @default(0) @map("downloads_count")
+  createdById      String?        @map("created_by")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  category  Category? @relation(fields: [categoryId], references: [id])
+  createdBy User?     @relation("ArticleCreatedBy", fields: [createdById], references: [id])
+
+  @@map("articles")
+}
+
+model Report {
+  id               String         @id @default(uuid())
+  title            String
+  issuingBody      String?        @map("issuing_body")
+  publicationDate  DateTime?      @map("publication_date") @db.Date
+  description      String?
+  categoryId       String?        @map("category_id")
+  fileUrl          String?        @map("file_url")
+  language         String         @default("ar")
+  statusDoc        DocumentStatus @default(published) @map("status_doc")
+  viewsCount       Int            @default(0) @map("views_count")
+  downloadsCount   Int            @default(0) @map("downloads_count")
+  createdById      String?        @map("created_by")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  category  Category? @relation(fields: [categoryId], references: [id])
+  createdBy User?     @relation("ReportCreatedBy", fields: [createdById], references: [id])
+
+  @@map("reports")
+}
+
+model Jurisprudence {
+  id              String         @id @default(uuid())
+  decisionNumber  String         @map("decision_number")
+  decisionDate    DateTime?      @map("decision_date") @db.Date
+  court           String
+  chamber         String?
+  subject         String?
+  summary         String?
+  fullText        String?        @map("full_text")
+  keywords        String[]
+  categoryId      String?        @map("category_id")
+  fileUrl         String?        @map("file_url")
+  sourceUrl       String?        @map("source_url")
+  language        String         @default("ar")
+  statusDoc       DocumentStatus @default(published) @map("status_doc")
+  viewsCount      Int            @default(0) @map("views_count")
+  createdById     String?        @map("created_by")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  category          Category?           @relation(fields: [categoryId], references: [id])
+  createdBy         User?               @relation("JurisprudenceCreatedBy", fields: [createdById], references: [id])
+  jurisprudenceLaws JurisprudenceLaw[]
+
+  @@map("jurisprudence")
+}
+
+model JurisprudenceLaw {
+  jurisprudenceId String @map("jurisprudence_id")
+  lawId           String @map("law_id")
+
+  jurisprudence Jurisprudence @relation(fields: [jurisprudenceId], references: [id], onDelete: Cascade)
+  law           Law           @relation(fields: [lawId], references: [id], onDelete: Cascade)
+
+  @@id([jurisprudenceId, lawId])
+  @@map("jurisprudence_laws")
+}
+
+model Lecture {
+  id               String         @id @default(uuid())
+  title            String
+  instructorName   String?        @map("instructor_name")
+  type             LectureType    @default(lecture)
+  durationMinutes  Int?           @map("duration_minutes")
+  description      String?
+  videoUrl         String?        @map("video_url")
+  fileUrl          String?        @map("file_url")
+  coverUrl         String?        @map("cover_url")
+  categoryId       String?        @map("category_id")
+  isFree           Boolean        @default(true) @map("is_free")
+  statusDoc        DocumentStatus @default(published) @map("status_doc")
+  viewsCount       Int            @default(0) @map("views_count")
+  createdById      String?        @map("created_by")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  category  Category? @relation(fields: [categoryId], references: [id])
+  createdBy User?     @relation("LectureCreatedBy", fields: [createdById], references: [id])
+
+  @@map("lectures")
+}
+
+model Announcement {
+  id            String           @id @default(uuid())
+  title         String
+  type          AnnouncementType @default(other)
+  description   String?
+  organization  String?
+  location      String?
+  eventDate     DateTime?        @map("event_date") @db.Date
+  deadline      DateTime?        @db.Date
+  externalLink  String?          @map("external_link")
+  isPublished   Boolean          @default(false) @map("is_published")
+  publishedAt   DateTime?        @map("published_at")
+  createdById   String?          @map("created_by")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  createdBy User? @relation("AnnouncementCreatedBy", fields: [createdById], references: [id])
+
+  @@map("announcements")
+}
+
+model DocumentAuthor {
+  id           String @id @default(uuid())
+  documentType String @map("document_type")
+  documentId   String @map("document_id")
+  authorId     String @map("author_id")
+  role         String @default("author")
+  sortOrder    Int    @default(0) @map("sort_order")
+
+  author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("document_authors")
+}
+
+model DocumentTag {
+  id           String @id @default(uuid())
+  documentType String @map("document_type")
+  documentId   String @map("document_id")
+  tagId        String @map("tag_id")
+
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@map("document_tags")
+}
+
+model ChatSession {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  title     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User?          @relation(fields: [userId], references: [id])
+  messages ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")
+  role      String
+  content   String
+  sources   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+
+// ==================== طلبات الاستشارة ====================
+model Consultation {
+  id        String   @id @default(uuid())
+  fullName  String   @map("full_name")
+  email     String
+  phone     String?
+  topic     String
+  body      String
+  status    String   @default("new")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("consultations")
+}

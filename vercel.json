@@ -1,16 +1,10 @@
 {
-  "framework": null,
-  "installCommand": "npm install",
-  "buildCommand": "sh scripts/build.sh",
+  "buildCommand": "node scripts/build.js",
   "outputDirectory": "public",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api" },
-    { "source": "/health", "destination": "/api" }
+    { "source": "/api/(.*)", "destination": "/api/index" }
   ],
   "functions": {
-    "api/index.js": {
-      "maxDuration": 30,
-      "includeFiles": "node_modules/.prisma/client/**"
-    }
+    "api/index.js": { "maxDuration": 30 }
   }
 }
