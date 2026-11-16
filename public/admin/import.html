@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>استيراد من Excel | Jurithèque</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="logo-icon">J</div> Jurithèque</div>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
+      <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar"><h1>استيراد المراجع من Excel</h1><div class="topbar-actions"><div class="user-info"></div></div></div>
+    <div class="content">
+      <div class="card">
+        <div class="card-header"><h2>1) اختر القسم والملف</h2></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group"><label>القسم الذي ستُضاف إليه المراجع</label>
+              <select id="sec"></select></div>
+            <div class="form-group" id="lt-wrap" style="display:none"><label>نوع العناصر</label>
+              <select id="lec-type"><option value="lecture">محاضرة</option><option value="course">دورة</option><option value="workshop">ورشة</option><option value="seminar">ندوة</option></select></div>
+            <div class="form-group"><label>ملف Excel أو CSV</label>
+              <input type="file" id="file" accept=".xlsx,.xls,.csv"></div>
+          </div>
+          <p style="color:#6B7280;font-size:.85rem;margin-top:8px">يُقرأ الملف داخل متصفحك. يُدعم الرابط في عمود مستقل، أو مضمَّناً في خلية العنوان (Hyperlink)، أو بصيغة HYPERLINK.
+            <a href="#" id="tpl">تحميل نموذج جاهز لهذا القسم</a></p>
+        </div>
+      </div>
+
+      <div class="card" id="master-card" style="display:none">
+        <div class="card-header"><h2>2) تم التعرف على «الملف الرئيسي» — توزيع تلقائي على الأقسام</h2><small id="master-info" style="color:#6B7280"></small></div>
+        <div class="card-body">
+          <p style="color:#6B7280;font-size:.9rem;margin-bottom:10px">يُقرأ عمود <b>section</b> لتحديد القسم. المراجع بحالة <b>ready</b> وروابطها مباشرة تُنشر فوراً. غير ذلك يُستورد <b>مسودة</b> (لا يراها الزوار) لتراجعه ثم تنشره من صفحة القسم. عمود <b>notes</b> ملاحظات داخلية ولا يُنشر.</p>
+          <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="pub-bare"> انشر أيضاً المراجع ذات الرابط العام (الصفحة الرئيسية لموقع وليس ملفاً مباشراً)</label>
+          <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="skipdup2" checked> تخطّي المراجع الموجودة مسبقاً بنفس العنوان</label>
+          <div style="overflow-x:auto"><table><thead><tr><th></th><th>القسم</th><th>العدد</th><th>سيُنشر</th><th>مسودة</th></tr></thead><tbody id="master-body"></tbody></table></div>
+          <div class="form-actions" style="margin-top:14px"><button class="btn btn-primary" id="go-master"><i class="fas fa-cloud-upload-alt"></i> استيراد المحدَّد</button></div>
+          <div id="master-progress" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <div class="card" id="map-card" style="display:none">
+        <div class="card-header"><h2>2) طابق الأعمدة</h2><small id="file-info" style="color:#6B7280"></small></div>
+        <div class="card-body">
+          <div class="form-grid" id="map-grid"></div>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="skipdup" checked> تخطّي المراجع الموجودة مسبقاً بنفس العنوان</label>
+          <div id="summary" style="margin:12px 0;font-weight:600"></div>
+          <div style="overflow-x:auto"><table><thead id="pv-head"></thead><tbody id="pv-body"></tbody></table></div>
+          <div class="form-actions" style="margin-top:14px">
+            <button class="btn btn-primary" id="go"><i class="fas fa-cloud-upload-alt"></i> بدء الاستيراد</button>
+          </div>
+          <div id="progress" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin', 'editor']);
+    renderUserBar();
+    var SECTIONS = {
+      laws: { label: 'القوانين', f: [['title', 'العنوان *'], ['fileUrl', 'رابط الملف'], ['officialNumber', 'رقم النص'], ['summary', 'ملخص']] },
+      jurisprudence: { label: 'الاجتهادات القضائية', f: [['subject', 'العنوان / الموضوع *'], ['fileUrl', 'رابط الملف'], ['decisionNumber', 'رقم القرار'], ['court', 'المحكمة']] },
+      books: { label: 'الكتب', f: [['title', 'العنوان *'], ['fileUrl', 'رابط الملف'], ['publisher', 'الناشر'], ['publicationYear', 'سنة النشر'], ['description', 'وصف']] },
+      theses: { label: 'الرسائل والأطروحات', f: [['title', 'العنوان *'], ['fileUrl', 'رابط الملف'], ['university', 'الجامعة'], ['degree', 'الدرجة'], ['defenseYear', 'سنة المناقشة']] },
+      articles: { label: 'المقالات', f: [['title', 'العنوان *'], ['fileUrl', 'رابط الملف'], ['journalName', 'المجلة'], ['publicationYear', 'السنة'], ['doi', 'DOI']] },
+      reports: { label: 'التقارير', f: [['title', 'العنوان *'], ['fileUrl', 'رابط الملف'], ['issuingBody', 'الجهة المصدرة'], ['description', 'وصف']] },
+      lectures: { label: 'المحاضرات والتكوينات', f: [['title', 'العنوان *'], ['fileUrl', 'رابط الملف'], ['instructorName', 'المحاضر']] }
+    };
+    var SYN = {
+      title: ['العنوان', 'عنوان', 'عنوان المرجع', 'اسم المرجع', 'المرجع', 'الاسم', 'title', 'titre', 'nom'],
+      subject: ['العنوان', 'الموضوع', 'موضوع', 'عنوان', 'subject', 'title'],
+      fileUrl: ['الرابط', 'رابط', 'رابط مباشر', 'رابط التحميل', 'رابط الملف', 'link', 'url', 'lien', 'pdf'],
+      officialNumber: ['رقم النص', 'رقم القانون', 'الرقم', 'رقم', 'number'],
+      summary: ['ملخص', 'الملخص', 'summary'],
+      description: ['وصف', 'الوصف', 'description'],
+      publisher: ['الناشر', 'دار النشر', 'publisher'],
+      publicationYear: ['سنة النشر', 'السنة', 'year', 'année'],
+      university: ['الجامعة', 'university'],
+      degree: ['الدرجة', 'النوع', 'degree'],
+      defenseYear: ['سنة المناقشة'],
+      journalName: ['المجلة', 'journal'],
+      doi: ['doi'],
+      issuingBody: ['الجهة المصدرة', 'الجهة', 'issuer'],
+      decisionNumber: ['رقم القرار', 'رقم الحكم', 'رقم'],
+      court: ['المحكمة', 'court'],
+      instructorName: ['المحاضر', 'المدرس', 'المؤطر', 'instructor']
+    };
+    var grid = [], links = [], headers = [], map = {};
+    // MASTER-START
+    var MASTER_LABEL = { laws: 'القوانين', jurisprudence: 'الاجتهادات', books: 'الكتب', theses: 'الرسائل والأطروحات', articles: 'المقالات', reports: 'التقارير', lectures: 'المحاضرات والدروس', announcements: 'الإعلانات' };
+    function isBare(u) { try { var p = new URL(u).pathname; return p === '' || p === '/'; } catch (e) { return true; } }
+    function toYear(y) { var n = parseInt(String(y || '').replace(/[^0-9]/g, '').slice(0, 4), 10); return n >= 1800 && n <= 2100 ? n : ''; }
+    function mapMasterRow(r, publishBare) {
+      var sec = String(r.section || '').trim().toLowerCase(), title = String(r.title || '').trim();
+      if (!MASTER_LABEL[sec] || !title) return null;
+      var url = /^https?:\/\//i.test(r.url) ? r.url.trim() : '';
+      var ok = String(r.status || '').trim().toLowerCase() === 'ready' && (!isBare(url) || publishBare);
+      var lang = String(r.language || '').trim().toLowerCase().slice(0, 5) || 'ar';
+      var year = toYear(r.year), author = String(r.author || '').trim(), o = { __row: r.__n }, t = title;
+      if (sec === 'announcements') {
+        o.title = title; o.organization = author; o.externalLink = url; o.isPublished = ok;
+        o.type = /مباراة|توظيف|وظيف/.test(title + ' ' + r.category) ? 'competition' : 'conference';
+      } else {
+        o.title = title; o.statusDoc = ok ? 'published' : 'draft'; o.language = lang; o.fileUrl = url;
+        if (sec === 'laws') { o.officialNumber = author; o.sourceUrl = url; }
+        if (sec === 'jurisprudence') {
+          delete o.title; o.subject = title; o.court = author || 'غير محدد'; o.sourceUrl = url;
+          var m = /(?:رقم|عدد)\s*([0-9]+(?:[\/.\-][0-9]+)*)/.exec(title); o.decisionNumber = m ? m[1] : 'غير محدد';
+          var d = /(\d{4})\/(\d{1,2})\/(\d{1,2})/.exec(title);
+          if (d) o.decisionDate = d[1] + '-' + ('0' + d[2]).slice(-2) + '-' + ('0' + d[3]).slice(-2);
+        }
+        if (sec === 'books') { o.publisher = author; if (year) o.publicationYear = year; }
+        if (sec === 'theses') {
+          o.university = author || 'غير محدد'; if (year) o.defenseYear = year;
+          o.degree = /دكتوراه|أطروحة|اطروحة|thèse/i.test(title) ? 'phd' : /ماستر|ماجستير|master/i.test(title) ? 'master' : 'other';
+        }
+        if (sec === 'articles') {
+          o.journalName = author; if (year) o.publicationYear = year;
+          var dm = /doi\.org\/(10\.[^\s]+)/i.exec(url); if (dm) o.doi = dm[1];
+        }
+        if (sec === 'reports') o.issuingBody = author;
+        if (sec === 'lectures') { o.instructorName = author; o.type = 'lecture'; }
+      }
+      return { section: sec, row: o };
+    }
+    // MASTER-END
+    var IDX = {};
+    function findMaster(wb) {
+      for (var i = 0; i < wb.SheetNames.length; i++) {
+        var ws = wb.Sheets[wb.SheetNames[i]];
+        var hd = (XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })[0] || []).map(function (x) { return String(x).trim().toLowerCase(); });
+        if (hd.indexOf('section') >= 0 && hd.indexOf('title') >= 0 && hd.indexOf('url') >= 0) return ws;
+      }
+      return null;
+    }
+    function masterItems() {
+      var pb = document.getElementById('pub-bare').checked, out = {};
+      for (var r = 1; r < grid.length; r++) {
+        var row = grid[r], v = function (k) { return IDX[k] >= 0 ? row[IDX[k]] : ''; };
+        var link = (IDX.url >= 0 && links[r][IDX.url]) || v('url');
+        var m = mapMasterRow({ section: v('section'), title: v('title'), author: v('author_or_source'), year: v('year'), language: v('language'), category: v('category'), url: link, status: v('status'), __n: row.__n }, pb);
+        if (m) (out[m.section] = out[m.section] || []).push(m.row);
+      }
+      return out;
+    }
+    function renderMaster() {
+      var it = masterItems(), keep = {};
+      document.querySelectorAll('#master-body input[type=checkbox]').forEach(function (c) { keep[c.value] = c.checked; });
+      document.getElementById('master-body').innerHTML = Object.keys(it).map(function (k) {
+        var pub = it[k].filter(function (x) { return x.statusDoc === 'published' || x.isPublished === true; }).length;
+        return '<tr><td><input type="checkbox" value="' + k + '"' + (keep[k] === false ? '' : ' checked') + '></td><td>' + MASTER_LABEL[k] + '</td><td>' + it[k].length + '</td><td>' + pub + '</td><td>' + (it[k].length - pub) + '</td></tr>';
+      }).join('') || '<tr><td colspan="5" style="color:#DC2626">لم يتم التعرف على أقسام صالحة.</td></tr>';
+    }
+    function showMaster(name) {
+      var H = grid[0].map(function (x) { return String(x).trim().toLowerCase(); });
+      ['section', 'title', 'author_or_source', 'year', 'language', 'category', 'url', 'status'].forEach(function (k) { IDX[k] = H.indexOf(k); });
+      document.getElementById('master-card').style.display = 'block';
+      document.getElementById('master-info').textContent = name + ' — ' + (grid.length - 1) + ' صفاً';
+      renderMaster();
+    }
+    document.getElementById('pub-bare').addEventListener('change', renderMaster);
+    document.getElementById('go-master').addEventListener('click', async function () {
+      var it = masterItems(), secs = [];
+      document.querySelectorAll('#master-body input:checked').forEach(function (c) { secs.push(c.value); });
+      var n = secs.reduce(function (a, k) { return a + (it[k] ? it[k].length : 0); }, 0);
+      if (!n) { showAlert('اختر قسماً واحداً على الأقل', 'error'); return; }
+      if (!confirm('سيتم استيراد ' + n + ' مرجعاً. متابعة؟')) return;
+      var btn = this, prog = document.getElementById('master-progress'), lines = [], skip = document.getElementById('skipdup2').checked;
+      btn.disabled = true;
+      try {
+        for (var s = 0; s < secs.length; s++) {
+          var k = secs[s], rows = it[k], tot = { created: 0, skipped: 0, badLinks: 0, failed: [] };
+          for (var i = 0; i < rows.length; i += 50) {
+            prog.innerHTML = lines.join('') + '<div>جارٍ استيراد «' + MASTER_LABEL[k] + '»... ' + Math.min(i + 50, rows.length) + ' / ' + rows.length + '</div>';
+            var r = await api.post('/import/' + k, { rows: rows.slice(i, i + 50), skipDuplicates: skip });
+            tot.created += r.created; tot.skipped += r.skipped; tot.badLinks += r.badLinks; tot.failed = tot.failed.concat(r.failed);
+          }
+          lines.push('<div style="padding:8px 12px;margin:4px 0;border-radius:8px;background:' + (tot.failed.length ? '#FEF3C7' : '#ECFDF5') + '"><b>' + MASTER_LABEL[k] + '</b>: أُضيف ' + tot.created + '، مكرّر ' + tot.skipped + '، فشل ' + tot.failed.length +
+            (tot.failed.length ? '<ul style="color:#B91C1C">' + tot.failed.slice(0, 10).map(function (f) { return '<li>الصف ' + f.row + ': ' + esc(f.error) + '</li>'; }).join('') + '</ul>' : '') + '</div>');
+        }
+        prog.innerHTML = lines.join('') + '<p style="margin-top:8px">انتهى. افتح صفحة كل قسم لمراجعة المسودات ونشرها.</p>';
+      } catch (err) {
+        prog.innerHTML = lines.join('') + '<div style="color:#B91C1C">توقف الاستيراد: ' + esc(err.message) + ' — إعادة التشغيل تتخطى المكرر.</div>';
+      }
+      btn.disabled = false;
+    });
+
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+    var secEl = document.getElementById('sec');
+    Object.keys(SECTIONS).forEach(function (k) { secEl.insertAdjacentHTML('beforeend', '<option value="' + k + '">' + SECTIONS[k].label + '</option>'); });
+    var norm = function (s) { return String(s || '').toLowerCase().replace(/[\s_:*]+/g, ' ').trim(); };
+
+    function readSheet(ws) {
+      grid = []; links = [];
+      var ref = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+      for (var r = ref.s.r; r <= ref.e.r; r++) {
+        var row = [], lrow = [];
+        for (var c = ref.s.c; c <= ref.e.c; c++) {
+          var cell = ws[XLSX.utils.encode_cell({ r: r, c: c })], v = '', link = '';
+          if (cell) {
+            v = cell.w !== undefined ? cell.w : cell.v;
+            if (cell.l && cell.l.Target) link = cell.l.Target;
+            else if (cell.f) { var m = /HYPERLINK\(\s*"([^"]+)"/i.exec(cell.f); if (m) link = m[1]; }
+          }
+          row.push(String(v == null ? '' : v).trim()); lrow.push(link);
+        }
+        grid.push(row); links.push(lrow);
+      }
+      // احذف الصفوف الفارغة بالكامل مع الحفاظ على رقم الصف الأصلي
+      var keep = [];
+      grid.forEach(function (row, i) { if (row.some(function (x) { return x; })) keep.push(i); });
+      grid = keep.map(function (i) { return grid[i]; }).map(function (row, k) { row.__n = keep[k] + 1; return row; });
+      links = keep.map(function (i) { return links[i]; });
+    }
+
+    function buildMapping() {
+      headers = grid[0] || [];
+      var f = SECTIONS[secEl.value].f, box = document.getElementById('map-grid');
+      box.innerHTML = '';
+      map = {};
+      f.forEach(function (pair) {
+        var key = pair[0], opts = '<option value="">— لا شيء —</option>';
+        headers.forEach(function (h, i) { opts += '<option value="' + i + '">عمود ' + (i + 1) + ': ' + esc(h || '(بلا عنوان)') + '</option>'; });
+        box.insertAdjacentHTML('beforeend', '<div class="form-group"><label>' + pair[1] + '</label><select data-key="' + key + '">' + opts + '</select></div>');
+        // مطابقة تلقائية بحسب أسماء الأعمدة
+        var syn = (SYN[key] || []).map(norm), idx = -1;
+        headers.forEach(function (h, i) { if (idx < 0 && syn.indexOf(norm(h)) >= 0) idx = i; });
+        if (idx >= 0) box.querySelector('[data-key="' + key + '"]').value = String(idx);
+      });
+      // عمود العنوان: إن لم يُعثر عليه خذ أول عمود
+      var tk = secEl.value === 'jurisprudence' ? 'subject' : 'title', ts = box.querySelector('[data-key="' + tk + '"]');
+      if (ts && !ts.value) ts.value = '0';
+      box.querySelectorAll('select').forEach(function (s) { s.addEventListener('change', preview); });
+      preview();
+    }
+
+    function degreeOf(t) {
+      t = norm(t);
+      if (/دكتور|phd|doctor/.test(t)) return 'phd';
+      if (/ماستر|ماجست|master/.test(t)) return 'master';
+      if (/إجاز|اجاز|licen/.test(t)) return 'licence';
+      return t ? 'other' : '';
+    }
+
+    function collect() {
+      var sel = {};
+      document.querySelectorAll('#map-grid select').forEach(function (s) { sel[s.getAttribute('data-key')] = s.value; });
+      var tk = secEl.value === 'jurisprudence' ? 'subject' : 'title', out = [];
+      for (var r = 1; r < grid.length; r++) {
+        var row = grid[r], o = { __row: row.__n };
+        Object.keys(sel).forEach(function (k) {
+          if (sel[k] === '') return;
+          var c = +sel[k], v = row[c];
+          if (k === 'fileUrl') {
+            var l = links[r][c];
+            o.fileUrl = l || (/^https?:\/\//i.test(v) ? v : '');
+            return;
+          }
+          if (k === 'degree') v = degreeOf(v);
+          o[k] = v;
+        });
+        // رابط مضمَّن في خلية العنوان
+        if (!o.fileUrl && sel[tk] !== '' && links[r][+sel[tk]]) o.fileUrl = links[r][+sel[tk]];
+        if (secEl.value === 'lectures') o.type = document.getElementById('lec-type').value;
+        if (o[tk]) out.push(o);
+      }
+      return out;
+    }
+
+    function preview() {
+      var rows = collect(), withLink = rows.filter(function (r) { return r.fileUrl; }).length;
+      document.getElementById('summary').innerHTML = rows.length
+        ? 'عدد المراجع الجاهزة للاستيراد: <b>' + rows.length + '</b> — منها بروابط: <b>' + withLink + '</b>'
+        : '<span style="color:#DC2626">لم يتم العثور على صفوف. تأكد من اختيار عمود العنوان.</span>';
+      var keys = SECTIONS[secEl.value].f.map(function (p) { return p[0]; });
+      document.getElementById('pv-head').innerHTML = '<tr><th>#</th>' + SECTIONS[secEl.value].f.map(function (p) { return '<th>' + p[1].replace(' *', '') + '</th>'; }).join('') + '</tr>';
+      document.getElementById('pv-body').innerHTML = rows.slice(0, 8).map(function (r, i) {
+        return '<tr><td>' + (i + 1) + '</td>' + keys.map(function (k) { var v = r[k] || ''; return '<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(v) + '">' + esc(v) + '</td>'; }).join('') + '</tr>';
+      }).join('');
+    }
+
+    document.getElementById('file').addEventListener('change', async function (e) {
+      var f = e.target.files[0]; if (!f) return;
+      try {
+        var wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+        document.getElementById('master-card').style.display = 'none';
+        var mws = findMaster(wb);
+        if (mws) {
+          readSheet(mws);
+          document.getElementById('map-card').style.display = 'none';
+          showMaster(f.name);
+          return;
+        }
+        readSheet(wb.Sheets[wb.SheetNames[0]]);
+        if (grid.length < 2) { showAlert('الملف لا يحتوي صفوف بيانات', 'error'); return; }
+        document.getElementById('file-info').textContent = f.name + ' — ' + (grid.length - 1) + ' صفاً';
+        document.getElementById('map-card').style.display = 'block';
+        buildMapping();
+      } catch (err) { showAlert('تعذّرت قراءة الملف: ' + err.message, 'error'); }
+    });
+    secEl.addEventListener('change', function () {
+      document.getElementById('lt-wrap').style.display = secEl.value === 'lectures' ? 'block' : 'none';
+      if (grid.length) buildMapping();
+    });
+    document.getElementById('lec-type').addEventListener('change', preview);
+
+    document.getElementById('tpl').addEventListener('click', function (e) {
+      e.preventDefault();
+      var f = SECTIONS[secEl.value].f, ws = XLSX.utils.aoa_to_sheet([f.map(function (p) { return p[1].replace(' *', ''); })]);
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'المراجع');
+      XLSX.writeFile(wb, 'template-' + secEl.value + '.xlsx');
+    });
+
+    document.getElementById('go').addEventListener('click', async function () {
+      var rows = collect(); if (!rows.length) { showAlert('لا توجد صفوف', 'error'); return; }
+      if (!confirm('سيتم استيراد ' + rows.length + ' مرجعاً إلى قسم «' + SECTIONS[secEl.value].label + '». متابعة؟')) return;
+      var btn = this, prog = document.getElementById('progress'), tot = { created: 0, skipped: 0, badLinks: 0, failed: [] };
+      btn.disabled = true;
+      try {
+        for (var i = 0; i < rows.length; i += 50) {
+          prog.innerHTML = 'جارٍ الاستيراد... ' + Math.min(i + 50, rows.length) + ' / ' + rows.length;
+          var r = await api.post('/import/' + secEl.value, { rows: rows.slice(i, i + 50), skipDuplicates: document.getElementById('skipdup').checked });
+          tot.created += r.created; tot.skipped += r.skipped; tot.badLinks += r.badLinks; tot.failed = tot.failed.concat(r.failed);
+        }
+        prog.innerHTML = '<div style="padding:12px;border-radius:8px;background:#ECFDF5;color:#065F46">اكتمل: أُضيف <b>' + tot.created + '</b>، مكرّر تم تخطيه <b>' + tot.skipped + '</b>، روابط غير صالحة <b>' + tot.badLinks + '</b>، فشل <b>' + tot.failed.length + '</b>.</div>' +
+          (tot.failed.length ? '<ul style="margin-top:8px;color:#B91C1C">' + tot.failed.slice(0, 30).map(function (f) { return '<li>الصف ' + f.row + ': ' + esc(f.error) + '</li>'; }).join('') + '</ul>' : '');
+      } catch (err) {
+        prog.innerHTML = '<div style="color:#B91C1C">توقف الاستيراد: ' + esc(err.message) + ' — الدفعات السابقة أُضيفت، وإعادة التشغيل تتخطى المكرر.</div>';
+      }
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>

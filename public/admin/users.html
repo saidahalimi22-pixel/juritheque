@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المستخدمون | Jurithèque</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="logo-icon">J</div> Jurithèque</div>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
+      <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1>إدارة المستخدمين</h1>
+      <div class="topbar-actions"><div class="user-info"></div></div>
+    </div>
+    <div class="content">
+
+      <div class="card" id="form-card" style="display:none;">
+        <div class="card-header"><h2>إضافة مستخدم</h2></div>
+        <div class="card-body">
+          <form id="user-form">
+            <div class="form-grid">
+              <div class="form-group"><label>الاسم الكامل *</label><input type="text" id="u-name" required></div>
+              <div class="form-group"><label>البريد الإلكتروني *</label><input type="email" id="u-email" required></div>
+              <div class="form-group"><label>كلمة المرور * (8 أحرف على الأقل)</label><input type="password" id="u-pass" minlength="8" required></div>
+              <div class="form-group"><label>الدور</label>
+                <select id="u-role"><option value="subscriber">عضو</option><option value="lawyer">محامٍ</option><option value="editor">محرر</option><option value="admin">مدير</option></select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="save-btn"><i class="fas fa-save"></i> حفظ</button>
+              <button type="button" class="btn btn-outline" onclick="document.getElementById('form-card').style.display='none'">إلغاء</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>المستخدمون <small id="total-count" style="color:#6B7280"></small></h2>
+          <div style="display:flex;gap:8px">
+            <input type="search" id="search-q" placeholder="بحث بالاسم أو البريد" style="padding:8px 12px;border:1px solid #E5E7EB;border-radius:8px">
+            <button class="btn btn-primary" onclick="document.getElementById('form-card').style.display='block'"><i class="fas fa-plus"></i> مستخدم جديد</button>
+          </div>
+        </div>
+        <div class="card-body" style="overflow-x:auto">
+          <table class="table"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th><th>الحالة</th><th>آخر دخول</th><th></th></tr></thead>
+          <tbody id="items-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin']);
+    renderUserBar();
+    var ROLES = { subscriber: 'عضو', lawyer: 'محامٍ', editor: 'محرر', admin: 'مدير', visitor: 'زائر' };
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+    var cache = [];
+    async function load() {
+      var tb = document.getElementById('items-tbody');
+      tb.innerHTML = '<tr><td colspan="6" style="text-align:center">جاري التحميل...</td></tr>';
+      try {
+        var q = document.getElementById('search-q').value.trim();
+        var r = await api.get('/users?limit=100' + (q ? '&q=' + encodeURIComponent(q) : ''));
+        cache = r.data || [];
+        document.getElementById('total-count').textContent = '(' + (r.meta && r.meta.total || 0) + ')';
+        tb.innerHTML = cache.map(function (u) {
+          var opts = Object.keys(ROLES).filter(function(k){return k!=='visitor'}).map(function (k) { return '<option value="' + k + '"' + (k === u.role ? ' selected' : '') + '>' + ROLES[k] + '</option>'; }).join('');
+          return '<tr><td>' + esc(u.fullName) + '</td><td>' + esc(u.email) + '</td>' +
+            '<td><select onchange="setRole(\'' + u.id + '\', this.value)">' + opts + '</select></td>' +
+            '<td>' + (u.isActive ? '<span style="color:#059669">مفعّل</span>' : '<span style="color:#DC2626">معطّل</span>') + '</td>' +
+            '<td>' + (u.lastLoginAt ? String(u.lastLoginAt).substring(0, 10) : '—') + '</td>' +
+            '<td style="white-space:nowrap">' +
+            '<button class="btn btn-sm btn-outline" title="تفعيل/تعطيل" onclick="toggleActive(\'' + u.id + '\')"><i class="fas fa-power-off"></i></button> ' +
+            '<button class="btn btn-sm btn-outline" title="كلمة مرور جديدة" onclick="resetPass(\'' + u.id + '\')"><i class="fas fa-key"></i></button> ' +
+            '<button class="btn btn-sm btn-outline" style="color:#EF4444" title="حذف" onclick="removeUser(\'' + u.id + '\')"><i class="fas fa-trash"></i></button>' +
+            '</td></tr>';
+        }).join('') || '<tr><td colspan="6" style="text-align:center;color:#9CA3AF">لا يوجد مستخدمون</td></tr>';
+      } catch (e) { tb.innerHTML = '<tr><td colspan="6" style="color:#EF4444;text-align:center">' + esc(e.message) + '</td></tr>'; }
+    }
+    async function act(fn) { try { await fn(); showAlert('تم'); load(); } catch (e) { showAlert(e.message, 'error'); load(); } }
+    function setRole(id, role) { act(function () { return api.put('/users/' + id, { role: role }); }); }
+    function toggleActive(id) { var u = cache.find(function (x) { return x.id === id; }); act(function () { return api.put('/users/' + id, { isActive: !u.isActive }); }); }
+    function resetPass(id) { var p = prompt('كلمة المرور الجديدة (8 أحرف على الأقل):'); if (p) act(function () { return api.put('/users/' + id, { password: p }); }); }
+    function removeUser(id) { if (confirm('حذف هذا المستخدم نهائياً؟')) act(function () { return api.delete('/users/' + id); }); }
+    document.getElementById('search-q').addEventListener('input', function () { clearTimeout(window.__t); window.__t = setTimeout(load, 300); });
+    document.getElementById('user-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      try {
+        await api.post('/users', { fullName: document.getElementById('u-name').value, email: document.getElementById('u-email').value, password: document.getElementById('u-pass').value, role: document.getElementById('u-role').value });
+        showAlert('تمت الإضافة'); e.target.reset(); document.getElementById('form-card').style.display = 'none'; load();
+      } catch (err) { showAlert(err.message, 'error'); }
+    });
+    load();
+  </script>
+</body>
+</html>

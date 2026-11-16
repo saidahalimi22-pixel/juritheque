@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اكتشاف مراجع مفتوحة | Jurithèque</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="logo-icon">J</div> Jurithèque</div>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
+      <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar"><h1>اكتشاف مراجع مفتوحة الاستقطاب</h1><div class="topbar-actions"><div class="user-info"></div></div></div>
+    <div class="content">
+      <div class="card">
+        <div class="card-header"><h2>1) ابحث في المستودعات المفتوحة</h2></div>
+        <div class="card-body">
+          <p style="color:#6B7280;font-size:.9rem;margin-bottom:10px">تُجلب النتائج مباشرة من مستودعات علمية مفتوحة، ولا يظهر إلا ما له <b>رابط PDF مباشر</b>. لا يُضاف شيء إلى موقعك قبل أن تحدّده وتضغط «استيراد».</p>
+          <div class="form-grid">
+            <div class="form-group"><label>القسم</label>
+              <select id="d-sec"><option value="articles">المقالات</option><option value="theses">الرسائل والأطروحات</option><option value="books">الكتب</option></select></div>
+            <div class="form-group"><label>المصدر</label>
+              <select id="d-src">
+                <option value="openalex">OpenAlex (مقالات وكتب وأطروحات من آلاف المستودعات)</option>
+                <option value="hal">HAL (الأرشيف الفرنسي المفتوح: أطروحات ومقالات فرنسية-مغربية)</option>
+                <option value="zenodo">Zenodo (مقالات وكتب وأطروحات مفتوحة)</option>
+              </select></div>
+            <div class="form-group"><label>كلمات البحث</label><input type="text" id="d-q" value="المغرب"></div>
+            <div class="form-group"><label>اللغة</label>
+              <select id="d-lang"><option value="">الكل</option><option value="ar">العربية</option><option value="fr">الفرنسية</option><option value="en">الإنجليزية</option></select></div>
+            <div class="form-group"><label>عدد النتائج</label>
+              <select id="d-n"><option>50</option><option selected>100</option><option>200</option></select></div>
+          </div>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="d-law" checked> حصر النتائج في مجال القانون (OpenAlex)</label>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="d-ma"> الباحثون من مؤسسات مغربية فقط (OpenAlex)</label>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="d-lic" checked> المراجع ذات الترخيص المفتوح الصريح فقط (مثل CC-BY) إن توفرت المعلومة</label>
+          <div class="form-actions" style="margin-top:14px"><button class="btn btn-primary" id="d-go"><i class="fas fa-search"></i> بحث</button></div>
+          <div id="d-msg" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <div class="card" id="res-card" style="display:none">
+        <div class="card-header"><h2>2) حدّد ما تريد استيراده <small id="res-count" style="color:#6B7280"></small></h2>
+          <div><button class="btn btn-sm btn-outline" id="sel-all">تحديد الكل</button> <button class="btn btn-sm btn-outline" id="sel-none">إلغاء التحديد</button></div></div>
+        <div class="card-body" style="overflow-x:auto">
+          <table><thead><tr><th></th><th>العنوان</th><th>المؤلفون / المصدر</th><th>السنة</th><th>اللغة</th><th>الترخيص</th><th>الملف</th></tr></thead><tbody id="res-body"></tbody></table>
+          <div class="form-actions" style="margin-top:14px"><button class="btn btn-primary" id="d-import"><i class="fas fa-cloud-upload-alt"></i> استيراد المحدَّد (يُنشر مباشرة)</button></div>
+          <div id="imp-msg" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin', 'editor']);
+    renderUserBar();
+    var results = [];
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+    function msg(id, html, color) { document.getElementById(id).innerHTML = '<span style="color:' + (color || '#374151') + '">' + html + '</span>'; }
+    function $(id) { return document.getElementById(id); }
+    async function getJson(url, name) {
+      var r;
+      try { r = await fetch(url); } catch (e) { throw new Error('تعذّر الاتصال بـ ' + name + ' (تحقق من الإنترنت)'); }
+      if (!r.ok) throw new Error(name + ' رجع الخطأ ' + r.status);
+      return r.json();
+    }
+    var LANGS = { ar: 'ar', fr: 'fr', en: 'en', ara: 'ar', fre: 'fr', fra: 'fr', eng: 'en' };
+
+    async function searchOpenAlex(p) {
+      var type = { articles: 'article', theses: 'dissertation', books: 'book|book-chapter' }[p.sec];
+      var f = ['open_access.is_oa:true', 'type:' + type];
+      if (p.law) f.push('concepts.id:C199539241');
+      if (p.lang) f.push('language:' + p.lang);
+      if (p.ma) f.push('authorships.institutions.country_code:MA');
+      var per = Math.min(100, p.n), pages = Math.ceil(p.n / per), out = [];
+      for (var page = 1; page <= pages; page++) {
+        var j = await getJson('https://api.openalex.org/works?search=' + encodeURIComponent(p.q) + '&filter=' + f.join(',') + '&per-page=' + per + '&page=' + page, 'OpenAlex');
+        var list = j.results || [];
+        list.forEach(function (w) {
+          var loc = w.best_oa_location || {}, pdf = loc.pdf_url || '';
+          if (!pdf) return;
+          out.push({
+            title: w.title || w.display_name || '', year: w.publication_year || '', lang: LANGS[w.language] || w.language || '',
+            authors: (w.authorships || []).slice(0, 3).map(function (a) { return a.author && a.author.display_name; }).filter(Boolean).join('، '),
+            venue: (loc.source && loc.source.display_name) || '', url: pdf, license: loc.license || ''
+          });
+        });
+        if (!list.length) break;
+      }
+      return out;
+    }
+    async function searchHal(p) {
+      var dt = { articles: 'ART', theses: 'THESE', books: '(OUV OR COUV)' }[p.sec];
+      var fq = ['docType_s:' + dt, 'domain_s:shs.droit', 'submitType_s:file'];
+      if (p.lang) fq.push('language_s:' + p.lang);
+      var url = 'https://api.archives-ouvertes.fr/search/?q=' + encodeURIComponent(p.q) + fq.map(function (x) { return '&fq=' + encodeURIComponent(x); }).join('') +
+        '&fl=' + encodeURIComponent('title_s,authFullName_s,producedDateY_i,fileMain_s,language_s,licence_s,journalTitle_s,uri_s') + '&rows=' + p.n + '&wt=json';
+      var j = await getJson(url, 'HAL');
+      return ((j.response && j.response.docs) || []).filter(function (d) { return d.fileMain_s; }).map(function (d) {
+        var lg = Array.isArray(d.language_s) ? d.language_s[0] : d.language_s;
+        return { title: [].concat(d.title_s || [''])[0], year: d.producedDateY_i || '', lang: LANGS[lg] || lg || '',
+          authors: (d.authFullName_s || []).slice(0, 3).join('، '), venue: d.journalTitle_s || 'HAL', url: d.fileMain_s, license: d.licence_s || '' };
+      });
+    }
+    async function searchZenodo(p) {
+      var st = { articles: 'article', theses: 'thesis', books: 'book' }[p.sec];
+      var url = 'https://zenodo.org/api/records?q=' + encodeURIComponent(p.q) + '&type=publication&subtype=' + st + '&access_status=open&size=' + Math.min(100, p.n) + '&sort=bestmatch';
+      var j = await getJson(url, 'Zenodo'), hits = (j.hits && j.hits.hits) || [], out = [];
+      hits.forEach(function (h) {
+        var md = h.metadata || {}, files = h.files || [];
+        var arr = Array.isArray(files) ? files : (files.entries ? Object.keys(files.entries).map(function (k) { return files.entries[k]; }) : []);
+        var f = arr.filter(function (x) { return /\.pdf$/i.test(x.key || x.filename || ''); })[0];
+        if (!f) return;
+        var link = (f.links && f.links.self) || ('https://zenodo.org/records/' + h.id + '/files/' + encodeURIComponent(f.key || f.filename) + '?download=1');
+        var lic = (md.rights && md.rights[0] && (md.rights[0].id || (md.rights[0].title && md.rights[0].title.en))) || (md.license && md.license.id) || '';
+        out.push({ title: md.title || '', year: (md.publication_date || '').substring(0, 4), lang: LANGS[(md.languages && md.languages[0] && md.languages[0].id) || ''] || '',
+          authors: (md.creators || []).slice(0, 3).map(function (c) { return c.name || (c.person_or_org && c.person_or_org.name); }).filter(Boolean).join('، '),
+          venue: (md.journal && md.journal.title) || 'Zenodo', url: link, license: lic });
+      });
+      return out;
+    }
+
+    function render() {
+      $('res-card').style.display = 'block';
+      $('res-count').textContent = '(' + results.length + ')';
+      $('res-body').innerHTML = results.map(function (r, i) {
+        return '<tr><td><input type="checkbox" data-i="' + i + '" checked></td><td style="min-width:260px">' + esc(r.title) + '</td><td>' + esc(r.authors) + (r.venue ? '<br><small style="color:#6B7280">' + esc(r.venue) + '</small>' : '') + '</td><td>' + esc(r.year) + '</td><td>' + esc(r.lang) + '</td><td>' + esc(r.license || '—') + '</td><td><a href="' + esc(r.url) + '" target="_blank" rel="noopener">فتح</a></td></tr>';
+      }).join('') || '<tr><td colspan="7" style="text-align:center;color:#9CA3AF">لا توجد نتائج بروابط PDF مباشرة. جرّب كلمات أو لغة أخرى.</td></tr>';
+    }
+
+    $('d-go').addEventListener('click', async function () {
+      var p = { sec: $('d-sec').value, src: $('d-src').value, q: $('d-q').value.trim(), lang: $('d-lang').value, n: parseInt($('d-n').value, 10), law: $('d-law').checked, ma: $('d-ma').checked };
+      if (!p.q) { msg('d-msg', 'اكتب كلمات البحث', '#B91C1C'); return; }
+      msg('d-msg', 'جارٍ البحث...'); $('imp-msg').innerHTML = '';
+      try {
+        var list = p.src === 'hal' ? await searchHal(p) : p.src === 'zenodo' ? await searchZenodo(p) : await searchOpenAlex(p);
+        var seen = {};
+        list = list.filter(function (r) {
+          if (!r.title || !/^https?:\/\//i.test(r.url) || seen[r.title.toLowerCase()]) return false;
+          seen[r.title.toLowerCase()] = 1;
+          if ($('d-lic').checked && r.license && !/cc|public|open|libre|etalab/i.test(r.license)) return false;
+          return true;
+        });
+        results = list; render();
+        msg('d-msg', 'وُجد ' + list.length + ' مرجعاً بروابط مباشرة. افتح بعض الروابط للتأكد قبل الاستيراد.', '#065F46');
+      } catch (e) { results = []; render(); $('res-card').style.display = 'none'; msg('d-msg', esc(e.message), '#B91C1C'); }
+    });
+    $('sel-all').addEventListener('click', function () { document.querySelectorAll('#res-body input').forEach(function (c) { c.checked = true; }); });
+    $('sel-none').addEventListener('click', function () { document.querySelectorAll('#res-body input').forEach(function (c) { c.checked = false; }); });
+
+    function toRow(sec, r, n) {
+      var lang = (r.lang || 'ar').slice(0, 5), who = [r.authors, r.venue].filter(Boolean).join(' — ');
+      var o = { __row: n, title: r.title.slice(0, 480), language: lang, fileUrl: r.url, statusDoc: 'published' };
+      var y = parseInt(r.year, 10);
+      if (sec === 'articles') { o.journalName = who; if (y) o.publicationYear = y; }
+      if (sec === 'books') { o.publisher = who; if (y) o.publicationYear = y; }
+      if (sec === 'theses') { o.university = who || 'غير محدد'; o.degree = 'phd'; if (y) o.defenseYear = y; }
+      return o;
+    }
+    $('d-import').addEventListener('click', async function () {
+      var sec = $('d-sec').value, rows = [];
+      document.querySelectorAll('#res-body input:checked').forEach(function (c) { var i = +c.getAttribute('data-i'); rows.push(toRow(sec, results[i], i + 1)); });
+      if (!rows.length) { msg('imp-msg', 'لم تحدد شيئاً', '#B91C1C'); return; }
+      if (!confirm('سيتم استيراد ' + rows.length + ' مرجعاً ونشرها مباشرة. متابعة؟')) return;
+      var btn = this, tot = { created: 0, skipped: 0, failed: [] };
+      btn.disabled = true;
+      try {
+        for (var i = 0; i < rows.length; i += 50) {
+          msg('imp-msg', 'جارٍ الاستيراد... ' + Math.min(i + 50, rows.length) + ' / ' + rows.length);
+          var r = await api.post('/import/' + sec, { rows: rows.slice(i, i + 50), skipDuplicates: true });
+          tot.created += r.created; tot.skipped += r.skipped; tot.failed = tot.failed.concat(r.failed);
+        }
+        msg('imp-msg', 'اكتمل: أُضيف <b>' + tot.created + '</b>، مكرّر تم تخطيه <b>' + tot.skipped + '</b>، فشل <b>' + tot.failed.length + '</b>' +
+          (tot.failed.length ? '<ul>' + tot.failed.slice(0, 8).map(function (f) { return '<li>' + esc(f.error) + '</li>'; }).join('') + '</ul>' : ''), '#065F46');
+      } catch (e) { msg('imp-msg', 'توقف الاستيراد: ' + esc(e.message), '#B91C1C'); }
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>
