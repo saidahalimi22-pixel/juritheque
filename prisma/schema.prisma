@@ -429,3 +429,13 @@ model Consultation {
 
   @@map("consultations")
 }
+
+
+// ==================== إعدادات المنصة (من نحن، البريد...) ====================
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

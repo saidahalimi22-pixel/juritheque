@@ -1,4 +1,4 @@
-/* Jurithèque Admin Panel Styles */
+/* Admin Panel Styles */
 
 :root {
   --royal-blue: #0A2540;
@@ -49,6 +49,9 @@ body {
   font-size: 1.3rem;
   font-weight: 700;
 }
+
+.sidebar-brand .brand-logo { width: 44px; height: 44px; flex-shrink: 0; }
+.sidebar-brand span { font-size: 1.05rem; line-height: 1.35; }
 
 .sidebar-brand .logo-icon {
   width: 40px;
@@ -374,14 +377,30 @@ tr:hover td {
 }
 
 /* Responsive */
-@media (max-width: 900px) {
-  .sidebar {
-    transform: translateX(100%);
-  }
-  .main {
-    margin-right: 0;
-  }
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+.main { min-width: 0; }
+.card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.menu-toggle { display: none; background: var(--royal-blue); color: var(--gold); border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 1.1rem; cursor: pointer; flex-shrink: 0; }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90; }
+
+@media (max-width: 1024px) {
+  .sidebar { transform: translateX(100%); transition: transform .25s ease; box-shadow: none; }
+  body.nav-open .sidebar { transform: translateX(0); box-shadow: -8px 0 30px rgba(0,0,0,.3); }
+  body.nav-open .sidebar-overlay { display: block; }
+  .main { margin-right: 0; width: 100%; }
+  .menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .topbar { padding: 10px 14px; gap: 10px; flex-wrap: wrap; justify-content: flex-start; }
+  .topbar h1 { font-size: 1.05rem; flex: 1; min-width: 0; }
+  .topbar-actions { gap: 8px; flex-wrap: wrap; width: 100%; justify-content: space-between; }
+  .user-info { font-size: .8rem; }
+  .content { padding: 14px; }
+  .card-header, .card-body { padding: 14px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat-card { padding: 14px; }
+  .filters input, .filters select { min-width: 0; width: 100%; }
+  table { min-width: 640px; }
+  th, td { padding: 10px 10px; font-size: .82rem; }
+  td { word-break: break-word; }
 }

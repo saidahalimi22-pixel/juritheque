@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Jurithèque | المنصة القانونية</title>
+<title>المرصد المغربي للأبحاث والدراسات القانونية</title>
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<meta name="description" content="المرصد المغربي للأبحاث والدراسات القانونية — تشريعات واجتهادات وأبحاث ومحاضرات في القانون المغربي والمقارن">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 :root{
@@ -100,12 +102,19 @@ button,input{font-family:inherit}
 .chat-input button{width:46px;height:46px;border-radius:50%;border:none;background:linear-gradient(145deg,var(--gold-bright),var(--gold));color:var(--royal);cursor:pointer}
 .user-chip{display:none;align-items:center;gap:8px;background:rgba(212,175,55,.15);border:1px solid rgba(212,175,55,.35);padding:5px 12px 5px 6px;border-radius:20px;font-size:.82rem;color:var(--gold-bright)}
 .user-chip .av{width:28px;height:28px;background:var(--gold);color:var(--royal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem}
+.logo img{width:46px;height:46px;flex-shrink:0}
+.logo-name{line-height:1.3;font-size:.95rem}
+.about-content h3,.about-content h4{color:var(--royal);margin:16px 0 4px}
+.about-content ul,.about-content ol{padding-right:20px}
+.about-content a{color:var(--royal-mid);text-decoration:underline}
+.contact-box{background:#fff;border:1px solid #E8ECF0;border-radius:18px;box-shadow:var(--shadow);padding:26px 22px;text-align:center}
+.contact-mail{display:inline-flex;align-items:center;gap:8px;direction:ltr;font-weight:700;font-size:1.05rem;color:var(--royal);background:rgba(212,175,55,.14);border:1px solid rgba(212,175,55,.5);padding:10px 18px;border-radius:30px;text-decoration:none;word-break:break-all}
 .footer-note{text-align:center;padding:20px 16px;color:var(--muted);font-size:.8rem}
 </style>
 </head>
 <body>
 <header class="topbar">
-  <div class="logo"><div class="logo-mark"><i class="fas fa-balance-scale"></i></div><div>Juri<em>thèque</em><div style="font-size:.65rem;font-weight:600;color:var(--gold);opacity:.95;margin-top:1px">للأبحاث والدراسات القانونية</div></div></div>
+  <div class="logo"><img src="logo.svg" alt="شعار المرصد"><div class="logo-name">المرصد المغربي<div style="font-size:.62rem;font-weight:600;color:var(--gold);opacity:.95;margin-top:1px">للأبحاث والدراسات القانونية</div></div></div>
   <div class="top-actions">
     <div class="user-chip" id="user-chip"><div class="av" id="user-av">م</div><span id="user-name">مستخدم</span><button type="button" onclick="logout()" title="خروج" style="background:none;border:none;color:var(--gold-bright);cursor:pointer;padding:0 4px"><i class="fas fa-sign-out-alt"></i></button></div>
     <button class="btn btn-outline-gold" id="btn-login-top" onclick="show('auth')"><i class="fas fa-user"></i> دخول</button>
@@ -115,8 +124,9 @@ button,input{font-family:inherit}
 
 <div id="view-home">
 <section class="hero"><div style="position:relative;z-index:1">
+  <img src="logo.svg" alt="شعار المرصد" style="width:96px;height:96px;display:block;margin:0 auto 14px;filter:drop-shadow(0 4px 14px rgba(0,0,0,.35))">
   <div class="hero-badge"><i class="fas fa-gem"></i> منصة قانونية متكاملة</div>
-  <h1>Jurithèque<br><span style="font-size:.82em;font-weight:700;color:var(--gold-bright)">منصة للأبحاث والدراسات القانونية</span></h1>
+  <h1>المرصد المغربي<br><span style="font-size:.78em;font-weight:700;color:var(--gold-bright)">للأبحاث والدراسات القانونية</span></h1>
   <p>تشريع، اجتهادات، مؤتمرات، محاضرات، وأبحاث قانونية</p>
   <div class="hero-btns">
     <button class="btn btn-gold" onclick="show('library')"><i class="fas fa-book-open"></i> استكشف المكتبة</button>
@@ -139,53 +149,35 @@ button,input{font-family:inherit}
     <div class="card" onclick="show('assistant')"><div class="card-icon"><i class="fas fa-brain"></i></div><h3>المساعد الذكي</h3><p>إجابات مبنية على المصادر</p></div>
     <div class="card" onclick="show('consult')"><div class="card-icon"><i class="fas fa-comments"></i></div><h3>الاستشارة القانونية</h3><p>اطرح سؤالك القانوني</p></div>
     <div class="card" onclick="show('auth')"><div class="card-icon"><i class="fas fa-user-lock"></i></div><h3>حسابي</h3><p>تسجيل ودخول الأعضاء</p></div>
+    <div class="card" onclick="show('contact')"><div class="card-icon"><i class="fas fa-envelope"></i></div><h3>تواصل معنا</h3><p>راسلنا عبر البريد الإلكتروني</p></div>
     <div class="card" onclick="show('about')"><div class="card-icon"><i class="fas fa-info-circle"></i></div><h3>من نحن</h3><p>التعريف بالمنصة وأهدافها</p></div>
   </div>
 </div>
-<div class="footer-note">Jurithèque — المنصة القانونية &nbsp;·&nbsp; <a href="#" onclick="show('about');return false" style="color:inherit;text-decoration:underline">من نحن</a></div>
+<div class="footer-note">المرصد المغربي للأبحاث والدراسات القانونية &nbsp;·&nbsp; <a href="#" onclick="show('about');return false" style="color:inherit;text-decoration:underline">من نحن</a> &nbsp;·&nbsp; <a href="#" onclick="show('contact');return false" style="color:inherit;text-decoration:underline">تواصل معنا</a><span id="footer-mail"></span></div>
 </div>
 
 <div class="panel" id="view-about">
   <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>من نحن</h2></div>
   <div style="background:#fff;border:1px solid #E8ECF0;border-radius:18px;box-shadow:var(--shadow);padding:24px 22px;line-height:2;color:var(--text)">
-    <div style="text-align:center;margin-bottom:10px"><div class="logo-mark" style="margin:0 auto;width:56px;height:56px;font-size:1.3rem"><i class="fas fa-balance-scale"></i></div></div>
-    <h3 style="text-align:center;margin-bottom:4px">منصة للأبحاث والدراسات القانونية</h3>
+    <div style="text-align:center;margin-bottom:10px"><img src="logo.svg" alt="شعار المرصد" style="width:92px;height:92px"></div>
+    <h3 style="text-align:center;margin-bottom:4px">المرصد المغربي للأبحاث والدراسات القانونية</h3>
     <p style="text-align:center;color:var(--muted);margin-bottom:16px">مرجعك المفتوح للقانون المغربي والمقارن</p>
-
-    <h4 style="color:var(--royal);margin-top:14px">من نحن</h4>
-    <p>منصة رقمية تجمع في مكان واحد النصوص التشريعية والاجتهادات القضائية والكتب والأطروحات والمقالات العلمية والمحاضرات وإعلانات الندوات والمؤتمرات، مع التركيز على القانون المغربي والقانون المقارن، لتسهيل وصول الطلبة والباحثين والمهنيين إلى المراجع الموثوقة.</p>
-
-    <h4 style="color:var(--royal);margin-top:14px">رؤيتنا</h4>
-    <p>أن تكون المنصة بوابة عربية وفرنكوفونية مرجعية للمعرفة القانونية المفتوحة، تقرّب المراجع من كل من يحتاجها دون عوائق.</p>
-
-    <h4 style="color:var(--royal);margin-top:14px">أهدافنا</h4>
-    <ul style="padding-right:20px">
-      <li>تجميع المراجع القانونية المتفرقة وتنظيمها في فهرس واضح وسهل البحث.</li>
-      <li>دعم طلبة الإجازة والماستر والدكتوراه بما يحتاجونه من نصوص وأبحاث ومحاضرات.</li>
-      <li>إبراز البحث القانوني المنشور في المستودعات الأكاديمية المفتوحة.</li>
-      <li>تتبّع المؤتمرات والندوات وفرص التكوين والمباريات.</li>
-      <li>تقديم توجيه أولي عبر المساعد الذكي وخدمة الاستشارة.</li>
-    </ul>
-
-    <h4 style="color:var(--royal);margin-top:14px">ماذا نقدّم</h4>
-    <ul style="padding-right:20px">
-      <li><b>المكتبة القانونية:</b> قوانين، كتب، رسائل وأطروحات، مقالات، تقارير.</li>
-      <li><b>الاجتهادات:</b> قرارات وأحكام قضائية.</li>
-      <li><b>التكوينات:</b> محاضرات ودروس وورشات.</li>
-      <li><b>الإعلانات:</b> ندوات ومؤتمرات ومباريات.</li>
-      <li><b>المساعد الذكي والاستشارة:</b> إجابات مبنية على مصادر المنصة، وطلبات توجيه مباشرة للإدارة.</li>
-    </ul>
-
-    <h4 style="color:var(--royal);margin-top:14px">كيف نختار المراجع</h4>
-    <p>نعتمد على المصادر الرسمية والمستودعات الأكاديمية المفتوحة ومواقع الجامعات والمؤسسات. نحيل إلى الملف في موقعه الأصلي ولا ننسخه، وننسب كل مرجع إلى مؤلفه ومصدره. وتبقى حقوق الملكية الفكرية لأصحابها.</p>
-
-    <div class="lock-note" style="margin-top:14px"><i class="fas fa-info-circle"></i><div><strong>حقوق المؤلف:</strong> إن كنت صاحب مرجع وتريد تعديل بياناته أو إزالة رابطه، راسلنا عبر نموذج الاستشارة وسنعالج الطلب بسرعة.</div></div>
-    <div class="lock-note"><i class="fas fa-gavel"></i><div><strong>تنبيه:</strong> محتوى المنصة للإعلام والبحث العلمي، <strong>ولا يشكل استشارة قانونية</strong> ولا يغني عن محامٍ في القضايا التي تتطلب تمثيلاً قانونياً. تأكد دائماً من الصيغة المحيّنة للنصوص من الجريدة الرسمية.</div></div>
-
-    <div style="text-align:center;margin-top:16px">
+    <div class="about-content" id="about-content">جارٍ التحميل...</div>
+    <div style="text-align:center;margin-top:18px">
       <button class="btn btn-gold" onclick="show('library')"><i class="fas fa-book-open"></i> استكشف المكتبة</button>
-      <button class="btn btn-outline-gold" style="color:var(--royal);border-color:var(--gold)" onclick="show('consult')"><i class="fas fa-comments"></i> تواصل معنا</button>
+      <button class="btn btn-outline-gold" style="color:var(--royal);border-color:var(--gold)" onclick="show('contact')"><i class="fas fa-envelope"></i> تواصل معنا</button>
     </div>
+  </div>
+</div>
+
+<div class="panel" id="view-contact">
+  <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>تواصل معنا</h2></div>
+  <div class="contact-box">
+    <img src="logo.svg" alt="" style="width:72px;height:72px;margin-bottom:8px">
+    <h3 style="margin-bottom:6px">المرصد المغربي للأبحاث والدراسات القانونية</h3>
+    <p style="color:var(--muted);margin-bottom:16px">يسعدنا تواصلكم معنا لأي اقتراح أو ملاحظة أو طلب تصحيح أو إضافة مرجع.</p>
+    <div id="contact-mail-box"></div>
+    <div style="margin-top:18px"><button class="btn btn-gold" onclick="show('consult')"><i class="fas fa-comments"></i> أو أرسل طلب استشارة عبر النموذج</button></div>
   </div>
 </div>
 
@@ -225,7 +217,7 @@ button,input{font-family:inherit}
   <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>المساعد الذكي</h2></div>
   <div class="chat">
     <div class="chat-head"><div class="av"><i class="fas fa-balance-scale"></i></div><div><strong>المساعد القانوني</strong><div style="font-size:.75rem;opacity:.8">للأعضاء المسجلين</div></div></div>
-    <div class="chat-log" id="chat-log"><div class="bubble bot">مرحباً بك في المساعد القانوني لمنصة Jurithèque. كيف يمكنني مساعدتك؟</div></div>
+    <div class="chat-log" id="chat-log"><div class="bubble bot">مرحباً بك في المساعد القانوني للمرصد المغربي للأبحاث والدراسات القانونية. كيف يمكنني مساعدتك؟</div></div>
     <form class="chat-input" onsubmit="return sendMsg(event)">
       <input id="chat-in" placeholder="اكتب سؤالك القانوني...">
       <button type="submit"><i class="fas fa-paper-plane"></i></button>
@@ -238,7 +230,7 @@ button,input{font-family:inherit}
   <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>الاستشارة القانونية</h2></div>
   <div class="lock-note"><i class="fas fa-info-circle"></i><div>هذه الخدمة للتوجيه الأولي عبر المنصة. <strong>لا تغني عن استشارة محامٍ</strong> في القضايا التي تستلزم تمثيلاً قانونياً. تصل طلباتك مباشرة إلى إدارة المنصة.</div></div>
   <div class="auth-card" style="max-width:480px">
-    <div style="text-align:center;margin-bottom:12px"><div class="logo-mark" style="margin:0 auto;width:52px;height:52px;font-size:1.25rem"><i class="fas fa-balance-scale"></i></div></div>
+    <div style="text-align:center;margin-bottom:12px"><img src="logo.svg" alt="" style="width:60px;height:60px"></div>
     <h2>طلب استشارة</h2>
     <p class="sub">املئي النموذج وسنعاود التواصل حسب آلية المنصة</p>
     <div class="field"><label>الاسم الكامل</label><input type="text" id="c-name" placeholder="اسمك الكامل"></div>
@@ -458,6 +450,21 @@ async function doRegister(){
     }
   }catch(e){}
 })();
+
+/* ---------- إعدادات المنصة (من نحن + البريد) ---------- */
+async function loadSettings(){
+  try{
+    var s=await call('GET','/settings');
+    var el=document.getElementById('about-content');if(el&&s.aboutHtml)el.innerHTML=s.aboutHtml;
+    var box=document.getElementById('contact-mail-box'),foot=document.getElementById('footer-mail');
+    if(s.contactEmail){
+      var m=esc(s.contactEmail);
+      if(box)box.innerHTML='<a class="contact-mail" href="mailto:'+m+'"><i class="fas fa-envelope"></i> '+m+'</a>';
+      if(foot)foot.innerHTML=' &nbsp;·&nbsp; <a href="mailto:'+m+'" style="color:inherit;text-decoration:underline">'+m+'</a>';
+    }else if(box){box.innerHTML='<p style="color:var(--muted)">للتواصل استعمل نموذج الاستشارة أدناه.</p>'}
+  }catch(e){var el2=document.getElementById('about-content');if(el2&&el2.textContent==='جارٍ التحميل...')el2.textContent='تعذّر تحميل المحتوى حالياً، أعد المحاولة لاحقاً.'}
+}
+loadSettings();
 
 /* ---------- الإدارة ---------- */
 async function loadStats(){

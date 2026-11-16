@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إعدادات المنصة | المرصد المغربي</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .toolbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--off-white);border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0}
+    .toolbar button{background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 11px;cursor:pointer;font-size:.85rem;font-family:inherit;color:var(--royal-blue)}
+    .toolbar button:hover{border-color:var(--gold)}
+    #about-editor{min-height:340px;max-height:70vh;overflow:auto;border:1px solid var(--border);border-radius:0 0 8px 8px;padding:16px 18px;background:#fff;line-height:2;outline:none;font-size:.97rem}
+    #about-editor:focus{border-color:var(--gold)}
+    #about-editor h4,#about-editor h3{color:var(--royal-blue);margin:14px 0 4px}
+    #about-editor ul,#about-editor ol{padding-right:22px}
+    .hint-text{color:var(--text-muted);font-size:.85rem;margin-top:6px}
+    .actions-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand"><img src="../logo.svg" alt="" class="brand-logo"><span>المرصد المغربي</span></div>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
+      <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="settings.html" class="active"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1>إعدادات المنصة</h1>
+      <div class="topbar-actions"><div class="user-info"></div></div>
+    </div>
+    <div class="content">
+
+      <div class="card">
+        <div class="card-header"><h2><i class="fas fa-envelope"></i> بريد التواصل</h2></div>
+        <div class="card-body">
+          <div class="form-group" style="max-width:480px">
+            <label>البريد الإلكتروني الذي يظهر في صفحة «تواصل معنا»</label>
+            <input type="email" id="contact-email" placeholder="contact@example.com" dir="ltr" style="text-align:left">
+            <p class="hint-text">اتركه فارغًا لإخفاء البريد من الموقع.</p>
+          </div>
+          <button class="btn btn-primary" id="save-email"><i class="fas fa-save"></i> حفظ البريد</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2><i class="fas fa-info-circle"></i> نص «من نحن»</h2></div>
+        <div class="card-body">
+          <p class="hint-text" style="margin:0 0 10px">اضغط داخل المربع واكتب أو عدّل أي جملة مباشرة، ثم اضغط «حفظ». يمكنك إضافة عناوين وفقرات وقوائم.</p>
+          <div class="toolbar">
+            <button type="button" data-cmd="bold"><b>غامق</b></button>
+            <button type="button" data-cmd="italic"><i>مائل</i></button>
+            <button type="button" data-block="h4">عنوان</button>
+            <button type="button" data-block="p">فقرة</button>
+            <button type="button" data-cmd="insertUnorderedList">• قائمة</button>
+            <button type="button" data-cmd="insertOrderedList">1. قائمة مرقمة</button>
+            <button type="button" id="btn-link">رابط</button>
+            <button type="button" data-cmd="undo">تراجع</button>
+            <button type="button" data-cmd="redo">إعادة</button>
+          </div>
+          <div id="about-editor" contenteditable="true" dir="rtl"></div>
+          <div class="actions-row">
+            <button class="btn btn-primary" id="save-about"><i class="fas fa-save"></i> حفظ «من نحن»</button>
+            <button class="btn btn-outline" id="reset-about"><i class="fas fa-undo"></i> استرجاع النص الافتراضي</button>
+            <a class="btn btn-outline" href="../index.html" target="_blank"><i class="fas fa-external-link-alt"></i> معاينة الموقع</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin']);
+    renderUserBar();
+    var ed = document.getElementById('about-editor');
+    var DEFAULT_HTML = '';
+    function setRows(){ document.execCommand('defaultParagraphSeparator', false, 'p'); }
+    async function load() {
+      try {
+        var s = await api.request('GET', '/settings');
+        document.getElementById('contact-email').value = s.contactEmail || '';
+        ed.innerHTML = s.aboutHtml;
+        DEFAULT_HTML = s.defaultAboutHtml;
+      } catch (e) { showAlert(e.message, 'error'); }
+    }
+    document.querySelectorAll('.toolbar [data-cmd]').forEach(function (b) {
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      b.addEventListener('click', function () { ed.focus(); document.execCommand(b.dataset.cmd, false, null); });
+    });
+    document.querySelectorAll('.toolbar [data-block]').forEach(function (b) {
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      b.addEventListener('click', function () { ed.focus(); document.execCommand('formatBlock', false, b.dataset.block); });
+    });
+    document.getElementById('btn-link').addEventListener('mousedown', function (e) { e.preventDefault(); });
+    document.getElementById('btn-link').addEventListener('click', function () {
+      var u = prompt('أدخل الرابط (يبدأ بـ https://):');
+      if (u) { ed.focus(); document.execCommand('createLink', false, u); }
+    });
+    document.getElementById('save-email').addEventListener('click', async function () {
+      try {
+        await api.request('PUT', '/settings', { contactEmail: document.getElementById('contact-email').value });
+        showAlert('تم حفظ البريد الإلكتروني', 'success');
+      } catch (e) { showAlert(e.message, 'error'); }
+    });
+    document.getElementById('save-about').addEventListener('click', async function () {
+      try {
+        var r = await api.request('PUT', '/settings', { aboutHtml: ed.innerHTML });
+        ed.innerHTML = r.aboutHtml;
+        showAlert('تم حفظ نص «من نحن»', 'success');
+      } catch (e) { showAlert(e.message, 'error'); }
+    });
+    document.getElementById('reset-about').addEventListener('click', function () {
+      if (!confirm('سيُستبدل النص الحالي بالنص الافتراضي (لن يُحفظ إلا بعد الضغط على حفظ). متابعة؟')) return;
+      ed.innerHTML = DEFAULT_HTML;
+    });
+    setRows();
+    load();
+  </script>
+</body>
+</html>

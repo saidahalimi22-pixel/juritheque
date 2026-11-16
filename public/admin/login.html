@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تسجيل الدخول | Jurithèque Admin</title>
+  <title>تسجيل الدخول | المرصد المغربي</title>
   <link rel="stylesheet" href="css/admin.css">
   <style>
     body {
@@ -99,8 +99,8 @@
 </head>
 <body>
   <div class="login-card">
-    <div class="logo"><div class="logo-icon">J</div></div>
-    <h1>Jurithèque</h1>
+    <div class="logo"><img src="../logo.svg" alt="" style="width:84px;height:84px"></div>
+    <h1 style="font-size:1.25rem;line-height:1.5">المرصد المغربي للأبحاث والدراسات القانونية</h1>
     <p class="subtitle">لوحة تحكم المنصة القانونية</p>
 
     <div class="error-msg" id="error"></div>
@@ -108,19 +108,16 @@
     <form id="login-form">
       <div class="form-group">
         <label>البريد الإلكتروني</label>
-        <input type="email" id="email" required placeholder="admin@juritheque.com" value="admin@juritheque.com">
+        <input type="email" id="email" required placeholder="البريد الإلكتروني" autocomplete="username">
       </div>
       <div class="form-group">
         <label>كلمة المرور</label>
-        <input type="password" id="password" required placeholder="••••••••" value="admin123456">
+        <input type="password" id="password" required placeholder="••••••••" autocomplete="current-password">
       </div>
       <button type="submit" class="btn-login" id="btn">دخول</button>
     </form>
 
-    <p class="hint">
-      تأكد أن الـ Backend يعمل على <code>localhost:4000</code><br>
-      يمكنك إنشاء حساب من API أو استخدام الحساب التجريبي بعد إنشائه.
-    </p>
+    
   </div>
 
   <script src="js/api.js"></script>

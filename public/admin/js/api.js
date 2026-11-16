@@ -1,5 +1,5 @@
 /**
- * Jurithèque Admin - API Client
+ * Admin - API Client
  * يربط لوحة التحكم بالـ Backend الحقيقي
  */
 
@@ -150,3 +150,21 @@ window.api = api;
 window.requireAuth = requireAuth;
 window.showAlert = showAlert;
 window.renderUserBar = renderUserBar;
+
+// قائمة جانبية متجاوبة للهاتف
+document.addEventListener('DOMContentLoaded', function () {
+  var bar = document.querySelector('.topbar');
+  if (!bar || !document.querySelector('.sidebar')) return;
+  var btn = document.createElement('button');
+  btn.className = 'menu-toggle';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'القائمة');
+  btn.innerHTML = '<i class="fas fa-bars"></i>';
+  bar.insertBefore(btn, bar.firstChild);
+  var ov = document.createElement('div');
+  ov.className = 'sidebar-overlay';
+  document.body.appendChild(ov);
+  function toggle(open) { document.body.classList.toggle('nav-open', open); }
+  btn.addEventListener('click', function () { toggle(!document.body.classList.contains('nav-open')); });
+  ov.addEventListener('click', function () { toggle(false); });
+});

@@ -1,5 +1,5 @@
 /**
- * Jurithèque API — يعمل على Vercel (Serverless) + Neon (PostgreSQL) + Vercel Blob (الملفات)
+ * المرصد المغربي للأبحاث والدراسات القانونية — API — يعمل على Vercel (Serverless) + Neon (PostgreSQL) + Vercel Blob (الملفات)
  * ملف واحد يحتوي كل شيء: المصادقة، الأقسام، رفع الملفات، التحميل، الاستشارات، المساعد، الإعداد الأولي.
  */
 const express = require('express');
@@ -113,7 +113,117 @@ function noteFail(key) {
 
 const router = express.Router();
 
-router.get('/health', (req, res) => res.json({ status: 'ok', service: 'Juritheque API' }));
+router.get('/health', (req, res) => res.json({ status: 'ok', service: 'Moroccan Legal Research Observatory API' }));
+
+/* ============================================================
+ * إعدادات المنصة: نص «من نحن» + بريد التواصل (قابلة للتعديل من لوحة الإدارة)
+ * ============================================================ */
+const SITE_NAME = 'المرصد المغربي للأبحاث والدراسات القانونية';
+const DEFAULT_ABOUT_HTML = `<h4>من نحن</h4>
+<p>المرصد المغربي للأبحاث والدراسات القانونية منصة رقمية تجمع في مكان واحد النصوص التشريعية والاجتهادات القضائية والكتب والأطروحات والمقالات العلمية والمحاضرات وإعلانات الندوات والمؤتمرات، مع التركيز على القانون المغربي والقانون المقارن، لتسهيل وصول الطلبة والباحثين والمهنيين إلى المراجع الموثوقة.</p>
+<h4>رؤيتنا</h4>
+<p>أن يكون المرصد بوابة عربية وفرنكوفونية مرجعية للمعرفة القانونية المفتوحة، تقرّب المراجع من كل من يحتاجها دون عوائق.</p>
+<h4>أهدافنا</h4>
+<ul>
+<li>تجميع المراجع القانونية المتفرقة وتنظيمها في فهرس واضح وسهل البحث.</li>
+<li>دعم طلبة الإجازة والماستر والدكتوراه بما يحتاجونه من نصوص وأبحاث ومحاضرات.</li>
+<li>إبراز البحث القانوني المنشور في المستودعات الأكاديمية المفتوحة.</li>
+<li>تتبّع المؤتمرات والندوات وفرص التكوين والمباريات.</li>
+<li>تقديم توجيه أولي عبر المساعد الذكي وخدمة الاستشارة.</li>
+</ul>
+<h4>ماذا نقدّم</h4>
+<ul>
+<li><b>المكتبة القانونية:</b> قوانين، كتب، رسائل وأطروحات، مقالات، تقارير.</li>
+<li><b>الاجتهادات:</b> قرارات وأحكام قضائية.</li>
+<li><b>التكوينات:</b> محاضرات ودروس وورشات.</li>
+<li><b>الإعلانات:</b> ندوات ومؤتمرات ومباريات.</li>
+<li><b>المساعد الذكي والاستشارة:</b> إجابات مبنية على مصادر المنصة، وطلبات توجيه مباشرة للإدارة.</li>
+</ul>
+<h4>كيف نختار المراجع</h4>
+<p>نعتمد على المصادر الرسمية والمستودعات الأكاديمية المفتوحة ومواقع الجامعات والمؤسسات. نحيل إلى الملف في موقعه الأصلي ولا ننسخه، وننسب كل مرجع إلى مؤلفه ومصدره. وتبقى حقوق الملكية الفكرية لأصحابها.</p>
+<h4>حقوق المؤلف</h4>
+<p>إن كنت صاحب مرجع وتريد تعديل بياناته أو إزالة رابطه، راسلنا عبر صفحة «تواصل معنا» وسنعالج الطلب بسرعة.</p>
+<h4>تنبيه</h4>
+<p>محتوى المنصة للإعلام والبحث العلمي، <b>ولا يشكل استشارة قانونية</b> ولا يغني عن محامٍ في القضايا التي تتطلب تمثيلاً قانونياً. تأكد دائماً من الصيغة المحيّنة للنصوص من الجريدة الرسمية.</p>`;
+
+// تنظيف HTML: نسمح فقط بوسوم تنسيق بسيطة (يمنع إدخال سكربتات)
+const ALLOWED_TAGS = new Set(['h3', 'h4', 'p', 'ul', 'ol', 'li', 'b', 'strong', 'i', 'em', 'u', 'br', 'a', 'blockquote']);
+function sanitizeHtml(input) {
+  let html = String(input || '');
+  html = html.replace(/<!--[\s\S]*?-->/g, '');
+  html = html.replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1\s*>/gi, '');
+  html = html.replace(/<(div|section)(\s[^>]*)?>/gi, '<p>').replace(/<\/(div|section)\s*>/gi, '</p>');
+  html = html.replace(/<h[12](\s[^>]*)?>/gi, '<h3>').replace(/<\/h[12]\s*>/gi, '</h3>');
+  html = html.replace(/<h[56](\s[^>]*)?>/gi, '<h4>').replace(/<\/h[56]\s*>/gi, '</h4>');
+  const out = [];
+  let last = 0;
+  const re = /<(\/?)([a-zA-Z0-9]+)([^>]*)>/g;
+  let m;
+  const text = (t) => t.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  while ((m = re.exec(html))) {
+    out.push(text(html.slice(last, m.index)));
+    last = re.lastIndex;
+    const closing = m[1] === '/';
+    const tag = m[2].toLowerCase();
+    if (!ALLOWED_TAGS.has(tag)) continue;
+    if (closing) { out.push('</' + tag + '>'); continue; }
+    if (tag === 'a') {
+      const h = /href\s*=\s*("([^"]*)"|'([^']*)')/i.exec(m[3] || '');
+      const url = h ? (h[2] || h[3] || '').trim() : '';
+      out.push(/^(https?:\/\/|mailto:)/i.test(url)
+        ? '<a href="' + url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener noreferrer">'
+        : '<a>');
+    } else out.push('<' + tag + '>');
+  }
+  out.push(text(html.slice(last)));
+  return out.join('').trim();
+}
+
+async function readSettings() {
+  try {
+    const rows = await prisma.setting.findMany();
+    return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  } catch (e) {
+    return {}; // الجدول غير جاهز بعد: نستعمل القيم الافتراضية
+  }
+}
+
+router.get(
+  '/settings',
+  ah(async (req, res) => {
+    const st = await readSettings();
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      siteName: SITE_NAME,
+      contactEmail: st.contactEmail || '',
+      aboutHtml: st.aboutHtml || DEFAULT_ABOUT_HTML,
+      aboutIsDefault: !st.aboutHtml,
+      defaultAboutHtml: DEFAULT_ABOUT_HTML,
+    });
+  })
+);
+
+router.put(
+  '/settings',
+  ...adminOnly,
+  ah(async (req, res) => {
+    const b = req.body || {};
+    const save = (key, value) =>
+      prisma.setting.upsert({ where: { key }, update: { value }, create: { key, value } });
+    if (b.contactEmail !== undefined) {
+      const mail = String(b.contactEmail || '').trim().toLowerCase();
+      if (mail && !emailOk(mail)) throw httpError(400, 'البريد الإلكتروني غير صحيح');
+      await save('contactEmail', mail);
+    }
+    if (b.aboutHtml !== undefined) {
+      const clean = sanitizeHtml(b.aboutHtml).slice(0, 60000);
+      // نص فارغ = العودة إلى النص الافتراضي
+      await save('aboutHtml', clean.replace(/<[^>]*>/g, '').trim() ? clean : '');
+    }
+    const st = await readSettings();
+    res.json({ ok: true, contactEmail: st.contactEmail || '', aboutHtml: st.aboutHtml || DEFAULT_ABOUT_HTML });
+  })
+);
 
 router.post(
   '/auth/register',
@@ -620,7 +730,7 @@ router.post(
         model: process.env.AI_MODEL || 'grok-3',
         temperature: 0.2,
         messages: [
-          { role: 'system', content: 'أنت مساعد قانوني لمنصة Jurithèque. أجب بالعربية وباختصار اعتماداً على المصادر المرفقة فقط عند توفرها، واذكر رقم المصدر بين أقواس مربعة. إن لم تكفِ المصادر فاذكر ذلك بصراحة ولا تخترع نصوصاً أو أرقام قوانين. في النهاية نبّه أن هذا توجيه أولي لا يغني عن استشارة محامٍ.' },
+          { role: 'system', content: 'أنت مساعد قانوني للمرصد المغربي للأبحاث والدراسات القانونية. أجب بالعربية وباختصار اعتماداً على المصادر المرفقة فقط عند توفرها، واذكر رقم المصدر بين أقواس مربعة. إن لم تكفِ المصادر فاذكر ذلك بصراحة ولا تخترع نصوصاً أو أرقام قوانين. في النهاية نبّه أن هذا توجيه أولي لا يغني عن استشارة محامٍ.' },
           { role: 'user', content: 'المصادر:\n' + context + '\n\nالسؤال: ' + question },
         ],
       }),
