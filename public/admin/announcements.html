@@ -52,7 +52,7 @@
             <div class="form-grid">
 
               <div class="form-group full"><label>العنوان *</label><input type="text" id="f-title" required></div>
-              <div class="form-group"><label>النوع</label><select id="f-type"><option value="competition">مسابقة</option><option value="job">توظيف</option><option value="seminar">ندوة</option><option value="training">تكوين</option><option value="conference">مؤتمر</option><option value="other">أخرى</option></select></div>
+              <div class="form-group"><label>النوع</label><select id="f-type"><option value="competition">مباراة</option><option value="job">توظيف</option><option value="seminar">ندوة</option><option value="training">تكوين</option><option value="conference">مؤتمر</option><option value="other">أخرى</option></select></div>
               <div class="form-group"><label>الجهة</label><input type="text" id="f-organization"></div>
               <div class="form-group"><label>المكان</label><input type="text" id="f-location"></div>
               <div class="form-group"><label>تاريخ الحدث</label><input type="date" id="f-eventDate"></div>
@@ -99,7 +99,9 @@
         { name: 'isPublished', default: 'true' }, { name: 'externalLink' }, { name: 'description' }
       ],
       columns: [
-        { key: 'title' }, { key: 'type' }, { key: 'organization' },
+        { key: 'title' },
+        { key: 'type', render: i => ({ competition: 'مباراة', job: 'توظيف', seminar: 'ندوة', training: 'تكوين', conference: 'مؤتمر', other: 'أخرى' })[i.type] || i.type },
+        { key: 'organization' },
         { key: 'deadline', type: 'date' }
       ]
     });

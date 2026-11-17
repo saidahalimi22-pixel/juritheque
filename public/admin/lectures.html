@@ -53,7 +53,7 @@
 
               <div class="form-group full"><label>العنوان *</label><input type="text" id="f-title" required></div>
               <div class="form-group"><label>المدرّب / المحاضر</label><input type="text" id="f-instructorName"></div>
-              <div class="form-group"><label>النوع</label><select id="f-type"><option value="lecture">محاضرة</option><option value="course">دورة</option><option value="workshop">ورشة</option><option value="seminar">ندوة</option></select></div>
+              <div class="form-group"><label>النوع</label><select id="f-type"><option value="lecture">محاضرة</option><option value="presentation">عرض</option><option value="course">دورة</option><option value="workshop">ورشة</option><option value="seminar">ندوة</option></select></div>
               <div class="form-group"><label>المدة (دقائق)</label><input type="number" id="f-durationMinutes"></div>
               <div class="form-group"><label>مجاني؟</label><select id="f-isFree"><option value="true">نعم</option><option value="false">لا</option></select></div>
               <div class="form-group"><label>حالة النشر</label><select id="f-statusDoc"><option value="published">منشور</option><option value="draft">مسودة</option></select></div>
@@ -105,7 +105,8 @@
         { name: 'videoUrl' }, { name: 'fileUrl' }
       ],
       columns: [
-        { key: 'title' }, { key: 'instructorName' }, { key: 'type' },
+        { key: 'title' }, { key: 'instructorName' },
+        { key: 'type', render: i => ({ lecture: 'محاضرة', presentation: 'عرض', course: 'دورة', workshop: 'ورشة', seminar: 'ندوة' })[i.type] || i.type },
         { key: 'statusDoc', render: i => i.statusDoc === 'published' ? 'منشور' : 'مسودة' }
       ]
     });

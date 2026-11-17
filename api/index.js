@@ -179,14 +179,14 @@ const DEFAULT_ABOUT_HTML = `<h4>من نحن</h4>
 <p>محتوى المنصة للإعلام والبحث العلمي، <b>ولا يشكل استشارة قانونية</b> ولا يغني عن محامٍ في القضايا التي تتطلب تمثيلاً قانونياً. تأكد دائماً من الصيغة المحيّنة للنصوص من الجريدة الرسمية.</p>`;
 
 // تنظيف HTML: نسمح فقط بوسوم تنسيق بسيطة (يمنع إدخال سكربتات)
-const ALLOWED_TAGS = new Set(['h3', 'h4', 'p', 'ul', 'ol', 'li', 'b', 'strong', 'i', 'em', 'u', 'br', 'a', 'blockquote']);
+const ALLOWED_TAGS = new Set(['h4', 'p', 'ul', 'ol', 'li', 'b', 'strong', 'i', 'em', 'u', 'br', 'a', 'blockquote']);
 function sanitizeHtml(input) {
   let html = String(input || '');
   html = html.replace(/<!--[\s\S]*?-->/g, '');
   html = html.replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1\s*>/gi, '');
   html = html.replace(/<(div|section)(\s[^>]*)?>/gi, '<p>').replace(/<\/(div|section)\s*>/gi, '</p>');
-  html = html.replace(/<h[12](\s[^>]*)?>/gi, '<h3>').replace(/<\/h[12]\s*>/gi, '</h3>');
-  html = html.replace(/<h[56](\s[^>]*)?>/gi, '<h4>').replace(/<\/h[56]\s*>/gi, '</h4>');
+  // كل العناوين تُوحَّد في مستوى واحد حتى تتناسق أحجامها
+  html = html.replace(/<h[1-6](\s[^>]*)?>/gi, '<h4>').replace(/<\/h[1-6]\s*>/gi, '</h4>');
   const out = [];
   let last = 0;
   const re = /<(\/?)([a-zA-Z0-9]+)([^>]*)>/g;

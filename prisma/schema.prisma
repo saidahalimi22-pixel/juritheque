@@ -41,6 +41,7 @@ enum DegreeType {
 
 enum LectureType {
   lecture
+  presentation
   course
   workshop
   seminar

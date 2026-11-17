@@ -103,7 +103,7 @@
         { name: 'statusDoc', default: 'published' }, { name: 'abstract' }, { name: 'fileUrl' }
       ],
       columns: [
-        { key: 'title' }, { key: 'degree' }, { key: 'university' }, { key: 'defenseYear' }
+        { key: 'title' }, { key: 'degree', render: i => ({ licence: 'إجازة', master: 'ماستر / ماجستير', phd: 'دكتوراه', other: 'أخرى' })[i.degree] || i.degree }, { key: 'university' }, { key: 'defenseYear' }
       ]
     });
     page.loadItems();
