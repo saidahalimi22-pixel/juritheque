@@ -26,6 +26,7 @@
       <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
       <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
       <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="links.html"><i class="fas fa-link"></i> فحص الروابط</a>
       <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
       <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
       <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
@@ -83,7 +84,12 @@
     async function getJson(url, name) {
       var r;
       try { r = await fetch(url); } catch (e) { throw new Error('تعذّر الاتصال بـ ' + name + ' (تحقق من الإنترنت)'); }
-      if (!r.ok) throw new Error(name + ' رجع الخطأ ' + r.status);
+      if (!r.ok) {
+        var detail = '';
+        try { var j = await r.json(); detail = j.message || (j.errors && j.errors[0] && j.errors[0].message) || ''; } catch (e) { /* ignore */ }
+        var err = new Error(name + ' رجع الخطأ ' + r.status + (detail ? ' (' + detail + ')' : ''));
+        err.status = r.status; throw err;
+      }
       return r.json();
     }
     var LANGS = { ar: 'ar', fr: 'fr', en: 'en', ara: 'ar', fre: 'fr', fra: 'fr', eng: 'en' };
@@ -126,27 +132,48 @@
     }
     async function searchZenodo(p) {
       var st = { articles: 'article', theses: 'thesis', books: 'book' }[p.sec];
-      var url = 'https://zenodo.org/api/records?q=' + encodeURIComponent(p.q) + '&type=publication&subtype=' + st + '&access_status=open&size=' + Math.min(100, p.n) + '&sort=bestmatch';
-      var j = await getJson(url, 'Zenodo'), hits = (j.hits && j.hits.hits) || [], out = [];
+      var size = 25, pages = Math.max(1, Math.min(4, Math.ceil(p.n / size))), hits = [];
+      // محاولات متدرجة: بعض معاملات Zenodo قد ترفضها الواجهة، فنبسّط الطلب عند الخطأ 400
+      var variants = [
+        function (pg) { return 'https://zenodo.org/api/records?q=' + encodeURIComponent(p.q) + '&type=publication&subtype=' + st + '&access_status=open&size=' + size + '&page=' + pg; },
+        function (pg) { return 'https://zenodo.org/api/records?q=' + encodeURIComponent(p.q + ' AND access_right:open') + '&type=publication&size=' + size + '&page=' + pg; },
+        function (pg) { return 'https://zenodo.org/api/records?q=' + encodeURIComponent(p.q) + '&size=' + size + '&page=' + pg; }
+      ];
+      var v = 0;
+      for (var pg = 1; pg <= pages; pg++) {
+        var j = null;
+        while (v < variants.length) {
+          try { j = await getJson(variants[v](pg), 'Zenodo'); break; }
+          catch (e) { if (e.status === 400 && v < variants.length - 1) { v++; continue; } throw e; }
+        }
+        var list = (j && j.hits && j.hits.hits) || [];
+        hits = hits.concat(list);
+        if (list.length < size) break;
+      }
+      var out = [];
       hits.forEach(function (h) {
         var md = h.metadata || {}, files = h.files || [];
         var arr = Array.isArray(files) ? files : (files.entries ? Object.keys(files.entries).map(function (k) { return files.entries[k]; }) : []);
         var f = arr.filter(function (x) { return /\.pdf$/i.test(x.key || x.filename || ''); })[0];
         if (!f) return;
-        var link = (f.links && f.links.self) || ('https://zenodo.org/records/' + h.id + '/files/' + encodeURIComponent(f.key || f.filename) + '?download=1');
-        var lic = (md.rights && md.rights[0] && (md.rights[0].id || (md.rights[0].title && md.rights[0].title.en))) || (md.license && md.license.id) || '';
-        out.push({ title: md.title || '', year: (md.publication_date || '').substring(0, 4), lang: LANGS[(md.languages && md.languages[0] && md.languages[0].id) || ''] || '',
+        var fname = f.key || f.filename;
+        var link = 'https://zenodo.org/records/' + h.id + '/files/' + encodeURIComponent(fname) + '?download=1';
+        var lic = (md.license && (md.license.id || md.license)) || (md.rights && md.rights[0] && (md.rights[0].id || (md.rights[0].title && md.rights[0].title.en))) || '';
+        var lng = md.language || (md.languages && md.languages[0] && md.languages[0].id) || '';
+        out.push({ title: md.title || '', year: (md.publication_date || '').substring(0, 4), lang: LANGS[lng] || '',
           authors: (md.creators || []).slice(0, 3).map(function (c) { return c.name || (c.person_or_org && c.person_or_org.name); }).filter(Boolean).join('، '),
-          venue: (md.journal && md.journal.title) || 'Zenodo', url: link, license: lic });
+          venue: (md.journal && md.journal.title) || 'Zenodo', url: link, license: typeof lic === 'string' ? lic : '' });
       });
-      return out;
+      return out.slice(0, p.n);
     }
+
+    function viewUrl(u) { return 'https://docs.google.com/gview?embedded=1&url=' + encodeURIComponent(u); }
 
     function render() {
       $('res-card').style.display = 'block';
       $('res-count').textContent = '(' + results.length + ')';
       $('res-body').innerHTML = results.map(function (r, i) {
-        return '<tr><td><input type="checkbox" data-i="' + i + '" checked></td><td style="min-width:260px">' + esc(r.title) + '</td><td>' + esc(r.authors) + (r.venue ? '<br><small style="color:#6B7280">' + esc(r.venue) + '</small>' : '') + '</td><td>' + esc(r.year) + '</td><td>' + esc(r.lang) + '</td><td>' + esc(r.license || '—') + '</td><td><a href="' + esc(r.url) + '" target="_blank" rel="noopener">فتح</a></td></tr>';
+        return '<tr><td><input type="checkbox" data-i="' + i + '" checked></td><td style="min-width:260px">' + esc(r.title) + '</td><td>' + esc(r.authors) + (r.venue ? '<br><small style="color:#6B7280">' + esc(r.venue) + '</small>' : '') + '</td><td>' + esc(r.year) + '</td><td>' + esc(r.lang) + '</td><td>' + esc(r.license || '—') + '</td><td><a href="' + esc(r.url) + '" target="_blank" rel="noopener">فتح</a><br><a href="' + esc(viewUrl(r.url)) + '" target="_blank" rel="noopener" style="font-size:.8rem">معاينة</a></td></tr>';
       }).join('') || '<tr><td colspan="7" style="text-align:center;color:#9CA3AF">لا توجد نتائج بروابط PDF مباشرة. جرّب كلمات أو لغة أخرى.</td></tr>';
     }
 

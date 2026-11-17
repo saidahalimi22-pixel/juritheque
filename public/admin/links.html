@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>فحص الروابط | المرصد المغربي</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .bar{height:10px;background:#E5E7EB;border-radius:6px;overflow:hidden;margin:12px 0}
+    .bar>div{height:100%;width:0;background:var(--gold);transition:width .3s}
+    .pill{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.78rem;font-weight:700}
+    .pill.broken{background:#FEE2E2;color:#B91C1C}.pill.generic{background:#FEF3C7;color:#92400E}
+    .pill.warn{background:#E0F2FE;color:#075985}
+    .url{direction:ltr;text-align:left;word-break:break-all;font-size:.78rem;color:#6B7280;max-width:260px}
+    .row-actions{display:flex;flex-wrap:wrap;gap:6px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+    .stats span{background:var(--off-white);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.85rem}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-brand"><img src="../logo.svg" alt="" class="brand-logo"><span>المرصد المغربي</span></div>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
+      <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="links.html" class="active"><i class="fas fa-link"></i> فحص الروابط</a>
+      <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar"><h1>فحص الروابط</h1><div class="topbar-actions"><div class="user-info"></div></div></div>
+    <div class="content">
+      <div class="card">
+        <div class="card-body">
+          <p style="line-height:1.9;margin:0 0 12px">تفحص هذه الأداة روابط المراجع وتعرض لك ما يلزم إصلاحه: <b>الروابط المعطوبة (404)</b> و<b>الروابط التي تحيل إلى الصفحة الرئيسية لموقع</b> بدل المرجع المباشر، و<b>روابط يصعب التأكد منها</b>. يستغرق الفحص بضع دقائق، فاترك الصفحة مفتوحة.</p>
+          <div class="filters">
+            <select id="sec">
+              <option value="all">كل الأقسام</option>
+              <option value="laws">القوانين</option><option value="jurisprudence">الاجتهادات</option>
+              <option value="books">الكتب</option><option value="theses">الرسائل والأطروحات</option>
+              <option value="articles">المقالات</option><option value="reports">التقارير</option>
+              <option value="lectures">المحاضرات</option><option value="announcements">الإعلانات</option>
+            </select>
+            <button class="btn btn-primary" id="start"><i class="fas fa-play"></i> ابدأ الفحص</button>
+            <button class="btn btn-outline" id="stop" style="display:none"><i class="fas fa-stop"></i> إيقاف</button>
+          </div>
+          <div class="bar"><div id="prog"></div></div>
+          <div id="status" style="font-size:.9rem;color:#6B7280"></div>
+          <div class="stats" id="stats"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>الروابط التي تحتاج إلى مراجعة</h2>
+          <select id="show" style="padding:6px"><option value="">الكل</option><option value="broken">المعطوبة</option><option value="generic">رئيسية فقط</option><option value="warn">غير مؤكدة</option></select>
+        </div>
+        <div style="overflow-x:auto">
+          <table><thead><tr><th>المرجع</th><th>القسم</th><th>المشكلة</th><th>الرابط</th><th>إجراءات</th></tr></thead>
+          <tbody id="res"><tr><td colspan="5" style="text-align:center;color:#9CA3AF">لم يبدأ الفحص بعد</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin', 'editor']);
+    renderUserBar();
+    var SEC = { laws: 'القوانين', jurisprudence: 'الاجتهادات', books: 'الكتب', theses: 'الأطروحات', articles: 'المقالات', reports: 'التقارير', lectures: 'المحاضرات', announcements: 'الإعلانات' };
+    var LBL = { broken: 'معطوب', generic: 'رابط رئيسي', warn: 'غير مؤكد' };
+    var problems = [], running = false, counts = { checked: 0, ok: 0 };
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function render() {
+      var f = document.getElementById('show').value;
+      var rows = problems.filter(function (p) { return !f || p.state === f; });
+      document.getElementById('res').innerHTML = rows.length ? rows.map(function (p, i) {
+        var k = problems.indexOf(p);
+        return '<tr data-k="' + k + '"><td>' + esc(p.title) + (p.isDraft ? ' <span class="pill warn">مسودة</span>' : '') + '</td><td>' + SEC[p.section] + '</td>' +
+          '<td><span class="pill ' + p.state + '">' + LBL[p.state] + '</span><div style="font-size:.78rem;color:#6B7280;margin-top:4px">' + esc(p.note) + '</div></td>' +
+          '<td class="url"><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url) + '</a></td>' +
+          '<td><div class="row-actions">' +
+          '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'replace\')">استبدال الرابط</button>' +
+          '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'remove\')">إزالة الرابط</button>' +
+          (p.isDraft ? '' : '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'draft\')">تحويل لمسودة</button>') +
+          '<button class="btn btn-sm btn-outline" style="color:#EF4444" onclick="act(' + k + ',\'delete\')"><i class="fas fa-trash"></i></button>' +
+          '</div></td></tr>';
+      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#9CA3AF">' + (running ? 'جارٍ الفحص...' : 'لا توجد روابط تحتاج مراجعة') + '</td></tr>';
+      var c = { broken: 0, generic: 0, warn: 0 };
+      problems.forEach(function (p) { c[p.state]++; });
+      document.getElementById('stats').innerHTML = '<span>تم فحص: <b>' + counts.checked + '</b></span><span>سليمة: <b>' + counts.ok + '</b></span><span style="color:#B91C1C">معطوبة: <b>' + c.broken + '</b></span><span style="color:#92400E">رئيسية فقط: <b>' + c.generic + '</b></span><span style="color:#075985">غير مؤكدة: <b>' + c.warn + '</b></span>';
+    }
+    async function act(k, what) {
+      var p = problems[k], path = '/' + p.section + '/' + p.id;
+      try {
+        if (what === 'delete') { if (!confirm('حذف هذا المرجع نهائيًا؟\n' + p.title)) return; await api.delete(path); }
+        else if (what === 'remove') { if (!confirm('إزالة الرابط من هذا المرجع؟')) return; var b = {}; b[p.field] = null; await api.put(path, b); }
+        else if (what === 'replace') { var u = prompt('الصق الرابط الصحيح (يبدأ بـ https://):', p.url); if (!u) return; if (!/^https?:\/\//i.test(u.trim())) { showAlert('الرابط غير صحيح', 'error'); return; } var b2 = {}; b2[p.field] = u.trim(); await api.put(path, b2); }
+        else if (what === 'draft') { await api.put(path, p.section === 'announcements' ? { isPublished: false } : { statusDoc: 'draft' }); }
+        showAlert('تم', 'success');
+        if (what === 'draft') p.isDraft = true; else problems.splice(k, 1);
+        render();
+      } catch (e) { showAlert(e.message, 'error'); }
+    }
+    async function checkSection(sec, secIndex, secCount) {
+      var offset = 0;
+      while (offset !== null && running) {
+        var r;
+        try { r = await api.get('/admin/check-links?section=' + sec + '&offset=' + offset + '&limit=8'); }
+        catch (e) { document.getElementById('status').textContent = 'خطأ: ' + e.message; running = false; return; }
+        r.results.forEach(function (x) { counts.checked++; if (x.state === 'ok') counts.ok++; else problems.push(x); });
+        offset = r.nextOffset;
+        var done = (secIndex + (r.nextOffset === null ? 1 : (r.offset + r.checked) / Math.max(1, r.total))) / secCount;
+        document.getElementById('prog').style.width = Math.round(done * 100) + '%';
+        document.getElementById('status').textContent = 'جارٍ فحص ' + SEC[sec] + '...';
+        render();
+      }
+    }
+    document.getElementById('start').addEventListener('click', async function () {
+      if (running) return;
+      var v = document.getElementById('sec').value;
+      var list = v === 'all' ? Object.keys(SEC) : [v];
+      problems = []; counts = { checked: 0, ok: 0 }; running = true;
+      this.style.display = 'none'; document.getElementById('stop').style.display = '';
+      for (var i = 0; i < list.length && running; i++) await checkSection(list[i], i, list.length);
+      document.getElementById('status').textContent = running ? 'اكتمل الفحص' : 'توقف الفحص';
+      document.getElementById('prog').style.width = running ? '100%' : document.getElementById('prog').style.width;
+      running = false; this.style.display = ''; document.getElementById('stop').style.display = 'none'; render();
+    });
+    document.getElementById('stop').addEventListener('click', function () { running = false; });
+    document.getElementById('show').addEventListener('change', render);
+    render();
+  </script>
+</body>
+</html>

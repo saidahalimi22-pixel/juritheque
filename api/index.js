@@ -1,5 +1,5 @@
 /**
- * المرصد المغربي للأبحاث والدراسات القانونية — API — يعمل على Vercel (Serverless) + Neon (PostgreSQL) + Vercel Blob (الملفات)
+ * المرصد المغربي للدراسات والأبحاث القانونية — API — يعمل على Vercel (Serverless) + Neon (PostgreSQL) + Vercel Blob (الملفات)
  * ملف واحد يحتوي كل شيء: المصادقة، الأقسام، رفع الملفات، التحميل، الاستشارات، المساعد، الإعداد الأولي.
  */
 const express = require('express');
@@ -61,6 +61,38 @@ app.use((req, res, next) => {
 });
 
 /* ============================================================
+ * حماية أساسية: ترويسات أمان + تحديد عدد المحاولات
+ * ============================================================ */
+app.use((req, res, next) => {
+  res.set({
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  });
+  next();
+});
+
+const _hits = new Map();
+/** يحدّ عدد الطلبات لكل عنوان IP في نافذة زمنية (يعمل داخل كل نسخة من الخادم) */
+function limit(name, max, windowMs) {
+  return (req, res, next) => {
+    const ip = String(req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+    const key = name + ':' + ip;
+    const now = Date.now();
+    const arr = (_hits.get(key) || []).filter((t) => now - t < windowMs);
+    if (arr.length >= max) {
+      res.set('Retry-After', String(Math.ceil(windowMs / 1000)));
+      return next(httpError(429, 'محاولات كثيرة، يرجى الانتظار قليلاً ثم إعادة المحاولة.'));
+    }
+    arr.push(now);
+    _hits.set(key, arr);
+    if (_hits.size > 5000) for (const k of _hits.keys()) { _hits.delete(k); if (_hits.size < 2500) break; }
+    next();
+  };
+}
+
+/* ============================================================
  * المصادقة والصلاحيات
  * ============================================================ */
 async function userFromToken(token) {
@@ -113,14 +145,14 @@ function noteFail(key) {
 
 const router = express.Router();
 
-router.get('/health', (req, res) => res.json({ status: 'ok', service: 'Moroccan Legal Research Observatory API' }));
+router.get('/health', (req, res) => res.json({ status: 'ok', service: 'Moroccan Observatory of Legal Studies and Research API' }));
 
 /* ============================================================
  * إعدادات المنصة: نص «من نحن» + بريد التواصل (قابلة للتعديل من لوحة الإدارة)
  * ============================================================ */
-const SITE_NAME = 'المرصد المغربي للأبحاث والدراسات القانونية';
+const SITE_NAME = 'المرصد المغربي للدراسات والأبحاث القانونية';
 const DEFAULT_ABOUT_HTML = `<h4>من نحن</h4>
-<p>المرصد المغربي للأبحاث والدراسات القانونية منصة رقمية تجمع في مكان واحد النصوص التشريعية والاجتهادات القضائية والكتب والأطروحات والمقالات العلمية والمحاضرات وإعلانات الندوات والمؤتمرات، مع التركيز على القانون المغربي والقانون المقارن، لتسهيل وصول الطلبة والباحثين والمهنيين إلى المراجع الموثوقة.</p>
+<p>المرصد المغربي للدراسات والأبحاث القانونية منصة رقمية تجمع في مكان واحد النصوص التشريعية والاجتهادات القضائية والكتب والأطروحات والمقالات العلمية والمحاضرات وإعلانات الندوات والمؤتمرات، مع التركيز على القانون المغربي والقانون المقارن، لتسهيل وصول الطلبة والباحثين والمهنيين إلى المراجع الموثوقة.</p>
 <h4>رؤيتنا</h4>
 <p>أن يكون المرصد بوابة عربية وفرنكوفونية مرجعية للمعرفة القانونية المفتوحة، تقرّب المراجع من كل من يحتاجها دون عوائق.</p>
 <h4>أهدافنا</h4>
@@ -227,6 +259,7 @@ router.put(
 
 router.post(
   '/auth/register',
+  limit('register', 6, 60 * 60 * 1000),
   ah(async (req, res) => {
     const { fullName, email, password, phone } = req.body || {};
     const mail = String(email || '').trim().toLowerCase();
@@ -251,6 +284,7 @@ router.post(
 
 router.post(
   '/auth/login',
+  limit('login', 10, 15 * 60 * 1000),
   ah(async (req, res) => {
     const mail = String((req.body || {}).email || '').trim().toLowerCase();
     const password = String((req.body || {}).password || '');
@@ -521,6 +555,7 @@ router.post(
  * ============================================================ */
 router.post(
   '/consultations',
+  limit('consult', 8, 60 * 60 * 1000),
   ah(async (req, res) => {
     const b = req.body || {};
     if (b.website) return res.status(201).json({ ok: true }); // فخ للروبوتات
@@ -635,6 +670,117 @@ router.delete(
   })
 );
 
+/** نشر كل المسودات في قسم واحد دفعة واحدة (للمدير فقط) */
+router.post(
+  '/admin/publish-drafts/:section',
+  ...adminOnly,
+  ah(async (req, res) => {
+    const cfg = SECTIONS[req.params.section];
+    if (!cfg || req.params.section === 'categories') throw httpError(404, 'قسم غير مدعوم');
+    const delegate = prisma[lowerFirst(cfg.model)];
+    let r;
+    if (hasField(cfg.model, 'statusDoc')) r = await delegate.updateMany({ where: { statusDoc: 'draft' }, data: { statusDoc: 'published' } });
+    else if (hasField(cfg.model, 'isPublished')) r = await delegate.updateMany({ where: { isPublished: false }, data: { isPublished: true, publishedAt: new Date() } });
+    else throw httpError(400, 'هذا القسم لا يحتوي مسودات');
+    res.json({ ok: true, published: r.count });
+  })
+);
+
+/* ============================================================
+ * فحص الروابط: يتحقق من أن روابط المراجع تعمل وأنها ليست مجرد صفحة رئيسية لموقع
+ * ============================================================ */
+const LINK_FIELDS = {
+  laws: ['fileUrl', 'sourceUrl'],
+  jurisprudence: ['fileUrl', 'sourceUrl'],
+  books: ['fileUrl'],
+  theses: ['fileUrl'],
+  articles: ['fileUrl'],
+  reports: ['fileUrl'],
+  lectures: ['fileUrl', 'videoUrl'],
+  announcements: ['externalLink'],
+};
+
+function isPrivateHost(host) {
+  const h = String(host || '').toLowerCase();
+  return (
+    !h || h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal') ||
+    /^(127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h) ||
+    h === '::1' || h.startsWith('[')
+  );
+}
+
+async function probeUrl(url) {
+  let u;
+  try { u = new URL(url); } catch (e) { return { state: 'broken', note: 'رابط غير صالح' }; }
+  if (!/^https?:$/.test(u.protocol) || isPrivateHost(u.hostname)) return { state: 'broken', note: 'رابط غير مسموح' };
+  const generic = u.pathname.replace(/\/+$/, '') === '' || /^\/(index\.(html?|php)|home|ar|fr|en)\/?$/i.test(u.pathname);
+  const headers = { 'User-Agent': 'Mozilla/5.0 (compatible; ObservatoireLinkCheck/1.0)', Accept: '*/*' };
+  const attempt = async (method) => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5000);
+    try {
+      const r = await fetch(u.href, { method, headers: method === 'GET' ? { ...headers, Range: 'bytes=0-0' } : headers, redirect: 'follow', signal: ctrl.signal });
+      try { r.body && r.body.cancel && r.body.cancel(); } catch (e) { /* ignore */ }
+      return { status: r.status };
+    } catch (e) {
+      const code = (e && e.cause && e.cause.code) || '';
+      if (e && e.name === 'AbortError') return { error: 'timeout' };
+      if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') return { error: 'dns' };
+      return { error: 'unreachable' };
+    } finally { clearTimeout(t); }
+  };
+  let r = await attempt('HEAD');
+  if (r.error !== 'dns' && (r.error || [400, 401, 403, 404, 405, 501].includes(r.status))) {
+    const r2 = await attempt('GET');
+    if (!r2.error || !r.error) r = r2.error && r.status ? r : r2;
+  }
+  let state, note;
+  if (r.error === 'dns') { state = 'broken'; note = 'النطاق غير موجود'; }
+  else if (r.error === 'timeout') { state = 'warn'; note = 'لم يستجب الموقع في الوقت المحدد'; }
+  else if (r.error) { state = 'warn'; note = 'تعذّر الاتصال بالموقع'; }
+  else if (r.status === 404 || r.status === 410) { state = 'broken'; note = 'الصفحة غير موجودة (' + r.status + ')'; }
+  else if (r.status >= 200 && r.status < 400) { state = 'ok'; note = ''; }
+  else if ([401, 403, 429, 999].includes(r.status)) { state = 'warn'; note = 'الموقع يمنع الفحص الآلي (' + r.status + ') — افتحه يدوياً للتأكد'; }
+  else { state = 'warn'; note = 'استجابة غير عادية (' + r.status + ')'; }
+  if (state === 'ok' && generic) { state = 'generic'; note = 'رابط الصفحة الرئيسية للموقع وليس المرجع المباشر'; }
+  return { state, note, status: r.status || null };
+}
+
+router.get(
+  '/admin/check-links',
+  ...staffOnly,
+  ah(async (req, res) => {
+    const section = String(req.query.section || '');
+    const cfg = SECTIONS[section];
+    const fields = LINK_FIELDS[section];
+    if (!cfg || !fields) throw httpError(404, 'قسم غير مدعوم');
+    const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+    const limit = Math.min(10, Math.max(1, parseInt(req.query.limit, 10) || 8));
+    const delegate = prisma[lowerFirst(cfg.model)];
+    const [total, items] = await Promise.all([
+      delegate.count(),
+      delegate.findMany({ orderBy: { id: 'asc' }, skip: offset, take: limit }),
+    ]);
+    const jobs = [];
+    items.forEach((it) => fields.forEach((f) => {
+      const url = it[f] && String(it[f]).trim();
+      if (url && /^https?:\/\//i.test(url)) jobs.push({ it, f, url });
+    }));
+    const results = [];
+    let next = 0;
+    const worker = async () => {
+      while (next < jobs.length) {
+        const j = jobs[next++];
+        const p = await probeUrl(j.url);
+        const draft = it => (it.statusDoc ? it.statusDoc !== 'published' : it.isPublished === false);
+        results.push({ id: j.it.id, section, field: j.f, url: j.url, title: j.it.title || j.it.subject || j.it.decisionNumber || '—', isDraft: draft(j.it), ...p });
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(8, jobs.length) }, worker));
+    res.json({ total, offset, checked: items.length, nextOffset: offset + items.length < total ? offset + items.length : null, results });
+  })
+);
+
 /* ============================================================
  * استيراد جماعي (من ملف Excel يقرؤه المتصفح)
  * ============================================================ */
@@ -702,6 +848,7 @@ router.get(
  * ============================================================ */
 router.post(
   '/assistant/ask',
+  limit('assistant', 40, 60 * 60 * 1000),
   authenticate,
   ah(async (req, res) => {
     const question = String((req.body || {}).question || '').trim().slice(0, 1000);
@@ -730,7 +877,7 @@ router.post(
         model: process.env.AI_MODEL || 'grok-3',
         temperature: 0.2,
         messages: [
-          { role: 'system', content: 'أنت مساعد قانوني للمرصد المغربي للأبحاث والدراسات القانونية. أجب بالعربية وباختصار اعتماداً على المصادر المرفقة فقط عند توفرها، واذكر رقم المصدر بين أقواس مربعة. إن لم تكفِ المصادر فاذكر ذلك بصراحة ولا تخترع نصوصاً أو أرقام قوانين. في النهاية نبّه أن هذا توجيه أولي لا يغني عن استشارة محامٍ.' },
+          { role: 'system', content: 'أنت مساعد قانوني للمرصد المغربي للدراسات والأبحاث القانونية. أجب بالعربية وباختصار اعتماداً على المصادر المرفقة فقط عند توفرها، واذكر رقم المصدر بين أقواس مربعة. إن لم تكفِ المصادر فاذكر ذلك بصراحة ولا تخترع نصوصاً أو أرقام قوانين. في النهاية نبّه أن هذا توجيه أولي لا يغني عن استشارة محامٍ.' },
           { role: 'user', content: 'المصادر:\n' + context + '\n\nالسؤال: ' + question },
         ],
       }),

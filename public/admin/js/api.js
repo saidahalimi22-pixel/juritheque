@@ -168,3 +168,47 @@ document.addEventListener('DOMContentLoaded', function () {
   btn.addEventListener('click', function () { toggle(!document.body.classList.contains('nav-open')); });
   ov.addEventListener('click', function () { toggle(false); });
 });
+
+// فلتر الحالة (منشور / مسودة) + نشر كل المسودات + عرض حتى 100 عنصر
+(function () {
+  var SECTION = (location.pathname.match(/\/admin\/([a-z]+)\.html/) || [])[1];
+  var MAP = { laws: 'laws', jurisprudence: 'jurisprudence', books: 'books', theses: 'theses', articles: 'articles', reports: 'reports', lectures: 'lectures', announcements: 'announcements' };
+  if (!MAP[SECTION] || !window.api) return;
+  var origGet = api.get.bind(api);
+  api.get = function (url) {
+    if (typeof url === 'string' && url.indexOf('/' + SECTION) === 0 || (typeof url === 'string' && url.indexOf(SECTION + '?') === 0)) {
+      url = url.replace('limit=50', 'limit=100');
+      var sel = document.getElementById('status-filter');
+      if (sel && sel.value && SECTION !== 'announcements') url += (url.indexOf('?') > -1 ? '&' : '?') + 'status=' + encodeURIComponent(sel.value);
+    }
+    return origGet(url);
+  };
+  document.addEventListener('DOMContentLoaded', function () {
+    var box = document.querySelector('.filters');
+    if (!box) return;
+    var searchBtn = box.querySelector('button');
+    if (SECTION !== 'announcements') {
+      var sel = document.createElement('select');
+      sel.id = 'status-filter';
+      sel.innerHTML = '<option value="">كل الحالات</option><option value="published">المنشورة فقط</option><option value="draft">المسودات فقط</option>';
+      box.appendChild(sel);
+      sel.addEventListener('change', function () { if (searchBtn) searchBtn.click(); });
+    }
+    var user = api.getUser && api.getUser();
+    if (user && user.role === 'admin') {
+      var pb = document.createElement('button');
+      pb.type = 'button';
+      pb.className = 'btn btn-outline';
+      pb.innerHTML = '<i class="fas fa-check-double"></i> نشر كل المسودات';
+      pb.addEventListener('click', async function () {
+        if (!confirm('سيتم نشر كل المسودات في هذا القسم وستظهر للزوار. هل راجعتَها وحذفتَ غير المناسب منها؟')) return;
+        try {
+          var r = await api.request('POST', '/admin/publish-drafts/' + SECTION);
+          showAlert('تم نشر ' + r.published + ' عنصر', 'success');
+          if (searchBtn) searchBtn.click();
+        } catch (e) { showAlert(e.message, 'error'); }
+      });
+      box.appendChild(pb);
+    }
+  });
+})();
