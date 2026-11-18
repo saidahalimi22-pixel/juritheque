@@ -782,6 +782,105 @@ router.get(
 );
 
 /* ============================================================
+ * اقتراح رابط بديل والتحقق من وجود المرجع على الإنترنت
+ * إضافة مستقلة: لا تعدّل أي بيانات، تقترح فقط، والاعتماد بيد المشرف.
+ * ============================================================ */
+function normTitle(s) {
+  return String(s || '').toLowerCase().normalize('NFKD')
+    .replace(/[\u0300-\u036f\u064B-\u065F\u0670\u0640]/g, '')
+    .replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+}
+function titleTokens(s) { return normTitle(s).split(' ').filter((w) => w.length >= 3); }
+function titleSimilarity(a, b) {
+  const A = new Set(titleTokens(a)), B = new Set(titleTokens(b));
+  if (!A.size || !B.size) return 0;
+  let inter = 0;
+  A.forEach((w) => { if (B.has(w)) inter++; });
+  return (2 * inter) / (A.size + B.size);
+}
+async function fetchJsonSafe(url, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms || 6000);
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'ObservatoireLinkCheck/1.0', Accept: 'application/json' }, signal: ctrl.signal });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) { return null; } finally { clearTimeout(t); }
+}
+const ALT_SOURCES = {
+  Crossref: async (q) => {
+    const j = await fetchJsonSafe('https://api.crossref.org/works?rows=5&select=title,URL&query.bibliographic=' + q);
+    return ((j && j.message && j.message.items) || []).map((it) => ({ title: (it.title || [])[0] || '', url: it.URL || '' }));
+  },
+  OpenAlex: async (q) => {
+    const j = await fetchJsonSafe('https://api.openalex.org/works?per-page=5&search=' + q);
+    return ((j && j.results) || []).map((w) => ({ title: w.title || '', url: (w.open_access && w.open_access.oa_url) || w.doi || '' }));
+  },
+  Zenodo: async (q) => {
+    const j = await fetchJsonSafe('https://zenodo.org/api/records?size=5&q=' + q);
+    return ((j && j.hits && j.hits.hits) || []).map((h) => ({ title: (h.metadata && h.metadata.title) || '', url: (h.links && (h.links.self_html || h.links.html)) || ('https://zenodo.org/records/' + h.id) }));
+  },
+  HAL: async (q) => {
+    const j = await fetchJsonSafe('https://api.archives-ouvertes.fr/search/?wt=json&rows=5&fl=title_s,uri_s&q=' + q);
+    return ((j && j.response && j.response.docs) || []).map((d) => ({ title: [].concat(d.title_s || [''])[0], url: d.uri_s || '' }));
+  },
+  DOAJ: async (q) => {
+    const j = await fetchJsonSafe('https://doaj.org/api/search/articles/' + q + '?pageSize=5');
+    return ((j && j.results) || []).map((r) => {
+      const b = r.bibjson || {};
+      const ft = (b.link || []).find((l) => l.type === 'fulltext');
+      return { title: b.title || '', url: (ft && ft.url) || '' };
+    });
+  },
+};
+
+router.get(
+  '/admin/suggest-link',
+  ...staffOnly,
+  ah(async (req, res) => {
+    const section = String(req.query.section || '');
+    const cfg = SECTIONS[section];
+    if (!cfg || !LINK_FIELDS[section]) throw httpError(404, 'قسم غير مدعوم');
+    const item = await prisma[lowerFirst(cfg.model)].findUnique({ where: { id: String(req.query.id || '') } });
+    if (!item) throw httpError(404, 'المرجع غير موجود');
+    const title = String(item.title || item.subject || '').trim();
+    if (title.length < 6) return res.json({ verdict: 'no_title', candidates: [], archive: null });
+    const q = encodeURIComponent(title.slice(0, 200));
+
+    // أرشيف الإنترنت: نسخة محفوظة من الرابط المعطوب نفسه (إن وُجدت)
+    let oldUrl = String(req.query.url || '');
+    try { const u = new URL(oldUrl); if (!/^https?:$/.test(u.protocol)) oldUrl = ''; } catch (e) { oldUrl = ''; }
+    const archiveP = oldUrl
+      ? fetchJsonSafe('https://archive.org/wayback/available?url=' + encodeURIComponent(oldUrl), 6000)
+      : Promise.resolve(null);
+
+    const names = Object.keys(ALT_SOURCES);
+    const lists = await Promise.all(names.map((n) => ALT_SOURCES[n](q).then((l) => l.map((x) => ({ ...x, source: n }))).catch(() => [])));
+    const seen = new Set();
+    let cands = lists.flat()
+      .filter((c) => c.url && /^https?:\/\//i.test(c.url) && c.title)
+      .map((c) => ({ ...c, score: Math.round(titleSimilarity(title, c.title) * 100) }))
+      .filter((c) => c.score >= 50)
+      .sort((a, b) => b.score - a.score)
+      .filter((c) => (seen.has(c.url) ? false : (seen.add(c.url), true)))
+      .slice(0, 4);
+
+    // نتأكد أن الرابط المقترح نفسه يعمل قبل عرضه
+    const probes = await Promise.all(cands.map((c) => probeUrl(c.url).catch(() => ({ state: 'warn', note: '' }))));
+    cands = cands.map((c, i) => ({ ...c, state: probes[i].state, note: probes[i].note })).filter((c) => c.state !== 'broken');
+
+    const ar = await archiveP;
+    const snap = ar && ar.archived_snapshots && ar.archived_snapshots.closest;
+    const archive = snap && snap.available && snap.url ? String(snap.url).replace(/^http:\/\//i, 'https://') : null;
+
+    const best = cands.length ? cands[0].score : 0;
+    const verdict = best >= 80 ? 'confirmed' : best >= 50 ? 'possible' : 'not_found';
+    res.json({ verdict, candidates: cands, archive });
+  })
+);
+
+/* ============================================================
  * استيراد جماعي (من ملف Excel يقرؤه المتصفح)
  * ============================================================ */
 const IMPORT_DEFAULTS = {

@@ -16,6 +16,10 @@
     .row-actions{display:flex;flex-wrap:wrap;gap:6px}
     .stats{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
     .stats span{background:var(--off-white);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.85rem}
+  .sug{margin-top:8px;padding:8px 10px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;font-size:.82rem;line-height:1.8}
+    .sug.none{background:#FFFBEB;border-color:#FDE68A}
+    .sug .c{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}
+    .sug a{word-break:break-all}
   </style>
 </head>
 <body>
@@ -59,6 +63,7 @@
             </select>
             <button class="btn btn-primary" id="start"><i class="fas fa-play"></i> ابدأ الفحص</button>
             <button class="btn btn-outline" id="stop" style="display:none"><i class="fas fa-stop"></i> إيقاف</button>
+            <button class="btn btn-outline" id="alt-all"><i class="fas fa-search"></i> اقتراح بدائل للمعطوب</button>
           </div>
           <div class="bar"><div id="prog"></div></div>
           <div id="status" style="font-size:.9rem;color:#6B7280"></div>
@@ -90,9 +95,10 @@
       document.getElementById('res').innerHTML = rows.length ? rows.map(function (p, i) {
         var k = problems.indexOf(p);
         return '<tr data-k="' + k + '"><td>' + esc(p.title) + (p.isDraft ? ' <span class="pill warn">مسودة</span>' : '') + '</td><td>' + SEC[p.section] + '</td>' +
-          '<td><span class="pill ' + p.state + '">' + LBL[p.state] + '</span><div style="font-size:.78rem;color:#6B7280;margin-top:4px">' + esc(p.note) + '</div></td>' +
+          '<td><span class="pill ' + p.state + '">' + LBL[p.state] + '</span><div style="font-size:.78rem;color:#6B7280;margin-top:4px">' + esc(p.note) + '</div>' + sugHtml(p, k) + '</td>' +
           '<td class="url"><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url) + '</a></td>' +
           '<td><div class="row-actions">' +
+          '<button class="btn btn-sm btn-outline" onclick="findAlt(' + k + ')"' + (p.sugLoading ? ' disabled' : '') + '><i class="fas fa-search"></i> ' + (p.sugLoading ? 'جارٍ البحث...' : 'ابحث عن بديل') + '</button>' +
           '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'replace\')">استبدال الرابط</button>' +
           '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'remove\')">إزالة الرابط</button>' +
           (p.isDraft ? '' : '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'draft\')">تحويل لمسودة</button>') +
@@ -103,6 +109,45 @@
       problems.forEach(function (p) { c[p.state]++; });
       document.getElementById('stats').innerHTML = '<span>تم فحص: <b>' + counts.checked + '</b></span><span>سليمة: <b>' + counts.ok + '</b></span><span style="color:#B91C1C">معطوبة: <b>' + c.broken + '</b></span><span style="color:#92400E">رئيسية فقط: <b>' + c.generic + '</b></span><span style="color:#075985">غير مؤكدة: <b>' + c.warn + '</b></span>';
     }
+    var VERD = { confirmed: ['المرجع موجود على الإنترنت (تطابق عالٍ في العنوان)', 'sug'], possible: ['يوجد مرجع مشابه، تأكد من أنه هو نفسه قبل الاعتماد', 'sug'], not_found: ['لم يُعثر على مرجع مطابق في المصادر المفتوحة. قد يكون غير مفهرس، أو عنوانه غير دقيق، فراجعه يدوياً', 'sug none'], no_title: ['عنوان المرجع قصير جداً للبحث', 'sug none'], error: ['تعذّر البحث الآن، أعد المحاولة', 'sug none'] };
+    function sugHtml(p, k) {
+      var r = p.sug; if (!r) return '';
+      var v = VERD[r.verdict] || VERD.error;
+      var h = '<div class="' + v[1] + '"><b>' + v[0] + '</b>';
+      (r.candidates || []).forEach(function (c, j) {
+        h += '<div class="c"><span class="pill ok">' + c.score + '%</span><span>' + esc(c.source) + '</span><a href="' + esc(c.url) + '" target="_blank" rel="noopener">' + esc(c.title).slice(0, 90) + '</a><button class="btn btn-sm btn-primary" onclick="adopt(' + k + ',' + j + ')">اعتماد</button></div>';
+      });
+      if (r.archive) h += '<div class="c"><span class="pill warn">أرشيف</span><span>نسخة محفوظة من الرابط القديم</span><a href="' + esc(r.archive) + '" target="_blank" rel="noopener">فتح النسخة</a><button class="btn btn-sm btn-outline" onclick="adopt(' + k + ',\'a\')">اعتماد النسخة المؤرشفة</button></div>';
+      return h + '</div>';
+    }
+    async function findAlt(k) {
+      var p = typeof k === 'number' ? problems[k] : k; if (!p) return;
+      p.sugLoading = true; render();
+      try { p.sug = await api.get('/admin/suggest-link?section=' + p.section + '&id=' + encodeURIComponent(p.id) + '&url=' + encodeURIComponent(p.url)); }
+      catch (e) { p.sug = { verdict: 'error', candidates: [], archive: null }; }
+      p.sugLoading = false; render();
+    }
+    async function adopt(k, j) {
+      var p = problems[k]; if (!p || !p.sug) return;
+      var url = j === 'a' ? p.sug.archive : (p.sug.candidates[j] || {}).url;
+      if (!url) return;
+      if (!confirm('اعتماد هذا الرابط لهذا المرجع؟\n' + url)) return;
+      try { var b = {}; b[p.field] = url; await api.put('/' + p.section + '/' + p.id, b); showAlert('تم تحديث الرابط', 'success'); problems.splice(k, 1); render(); }
+      catch (e) { showAlert(e.message, 'error'); }
+    }
+    var altRunning = false;
+    document.getElementById('alt-all').addEventListener('click', async function () {
+      if (altRunning) { altRunning = false; return; }
+      var todo = problems.filter(function (p) { return p.state === 'broken' && !p.sug; });
+      if (!todo.length) { showAlert('لا توجد روابط معطوبة بلا اقتراح', 'info'); return; }
+      altRunning = true; var btn = this, old = btn.innerHTML; btn.innerHTML = '<i class="fas fa-stop"></i> إيقاف الاقتراح';
+      for (var i = 0; i < todo.length && altRunning; i++) {
+        document.getElementById('status').textContent = 'البحث عن بدائل: ' + (i + 1) + ' / ' + todo.length;
+        if (problems.indexOf(todo[i]) !== -1) await findAlt(todo[i]);
+      }
+      document.getElementById('status').textContent = 'انتهى البحث عن البدائل';
+      altRunning = false; btn.innerHTML = old;
+    });
     async function act(k, what) {
       var p = problems[k], path = '/' + p.section + '/' + p.id;
       try {
