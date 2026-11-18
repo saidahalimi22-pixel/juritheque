@@ -896,6 +896,13 @@ const ALT_SOURCES = {
     const j = await fetchJsonSafe('https://api.archives-ouvertes.fr/search/?wt=json&rows=5&fl=title_s,uri_s&q=' + q);
     return ((j && j.response && j.response.docs) || []).map((d) => ({ title: [].concat(d.title_s || [''])[0], url: d.uri_s || '' }));
   },
+  CORE: async (q) => {
+    if (!process.env.CORE_API_KEY) return [];
+    try {
+      const w = await coreSearch(decodeURIComponent(q), 5);
+      return w.map((x) => ({ title: x.title || '', url: x.downloadUrl || (x.sourceFulltextUrls || [])[0] || '' }));
+    } catch (e) { return []; }
+  },
   DOAJ: async (q) => {
     const j = await fetchJsonSafe('https://doaj.org/api/search/articles/' + q + '?pageSize=5');
     return ((j && j.results) || []).map((r) => {
@@ -905,6 +912,66 @@ const ALT_SOURCES = {
     });
   },
 };
+
+/* ============================================================
+ * CORE: أكبر مجمّع لمستودعات الجامعات المفتوحة (يشمل مستودعات عربية)
+ * يحتاج مفتاحاً مجانياً: متغير البيئة CORE_API_KEY (من https://core.ac.uk/services/api)
+ * ============================================================ */
+const CORE_NO_KEY = 'مصدر CORE غير مفعّل: سجّل مجاناً في https://core.ac.uk/services/api للحصول على مفتاح، ثم أضفه في Vercel باسم CORE_API_KEY (Settings ← Environment Variables) وأعد النشر.';
+async function coreSearch(q, n) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const r = await fetch('https://api.core.ac.uk/v3/search/works?limit=' + n + '&q=' + encodeURIComponent(q), {
+      headers: { Authorization: 'Bearer ' + process.env.CORE_API_KEY, Accept: 'application/json' },
+      signal: ctrl.signal,
+    });
+    if (!r.ok) throw httpError(502, 'CORE رجع الخطأ ' + r.status + (r.status === 401 ? ' (المفتاح غير صالح)' : r.status === 429 ? ' (تجاوزتَ الحد المسموح، انتظر قليلاً)' : ''));
+    return (await r.json()).results || [];
+  } catch (e) {
+    if (e.status) throw e;
+    throw httpError(502, 'تعذّر الاتصال بـ CORE');
+  } finally { clearTimeout(t); }
+}
+
+router.get(
+  '/admin/core-search',
+  ...staffOnly,
+  ah(async (req, res) => {
+    if (!process.env.CORE_API_KEY) throw httpError(400, CORE_NO_KEY);
+    const q = String(req.query.q || '').trim().slice(0, 200);
+    if (q.length < 2) throw httpError(400, 'اكتب كلمات البحث');
+    const n = Math.min(100, Math.max(10, parseInt(req.query.n, 10) || 50));
+    const sec = String(req.query.sec || '');
+    const lang = String(req.query.lang || '').toLowerCase();
+    const works = await coreSearch(q, n);
+    const rows = [];
+    works.forEach((w) => {
+      const url = w.downloadUrl || (w.sourceFulltextUrls || [])[0] || '';
+      if (!/^https?:\/\//i.test(url) || !w.title) return;
+      const wl = String((w.language && w.language.code) || '').toLowerCase();
+      if (lang && wl && wl !== lang) return;
+      const types = [].concat(w.documentType || [], w.documentTypes || []).map((x) => String(x).toLowerCase());
+      if (types.length) {
+        const isThesis = types.some((x) => /thesis|dissertation/.test(x));
+        const isBook = types.some((x) => /book/.test(x));
+        if (sec === 'theses' && !isThesis) return;
+        if (sec === 'books' && !isBook) return;
+        if (sec === 'articles' && (isThesis || isBook)) return;
+      }
+      rows.push({
+        title: String(w.title),
+        year: w.yearPublished || '',
+        lang: wl,
+        authors: (w.authors || []).slice(0, 3).map((x) => x.name).filter(Boolean).join('، '),
+        venue: ((w.journals && w.journals[0] && w.journals[0].title) || w.publisher || 'CORE'),
+        url,
+        license: '',
+      });
+    });
+    res.json(rows);
+  })
+);
 
 router.get(
   '/admin/suggest-link',

@@ -51,6 +51,7 @@
                 <option value="openalex">OpenAlex (مقالات وكتب وأطروحات من آلاف المستودعات)</option>
                 <option value="hal">HAL (الأرشيف الفرنسي المفتوح: أطروحات ومقالات فرنسية-مغربية)</option>
                 <option value="zenodo">Zenodo (مقالات وكتب وأطروحات مفتوحة)</option>
+                <option value="core">CORE (مستودعات جامعات عربية وعالمية — يحتاج مفتاحاً مجانياً، انظر الشرح أسفل الصفحة)</option>
                 <option value="doaj">DOAJ (مجلات علمية محكّمة مفتوحة الوصول، المقالات فقط)</option>
               </select></div>
             <div class="form-group"><label>كلمات البحث</label><input type="text" id="d-q" value="المغرب"></div>
@@ -65,7 +66,10 @@
           <div class="form-actions" style="margin-top:14px"><button class="btn btn-primary" id="d-go"><i class="fas fa-search"></i> بحث</button></div>
           <div id="d-msg" style="margin-top:10px"></div>
           <p style="margin-top:14px;font-size:.85rem;color:#6B7280;line-height:1.9">مصادر عربية ومغربية للبحث اليدوي (لا تتيح واجهة بحث آلية مفتوحة، فتُفتح في تبويب جديد): <a href="https://revues.imist.ma" target="_blank" rel="noopener">منصة المجلات العلمية المغربية</a> · <a href="https://toubkal.imist.ma" target="_blank" rel="noopener">Toubkal (أطروحات مغربية)</a> · <a href="https://asjp.cerist.dz" target="_blank" rel="noopener">ASJP (المجلات الجزائرية)</a> · <a href="https://doaj.org" target="_blank" rel="noopener">DOAJ</a></p>
-        </div>
+                  <p style="margin-top:10px;font-size:.85rem;color:#6B7280;line-height:1.9"><b>مصادر رسمية للتشريع والاجتهاد (للبحث اليدوي):</b> <a href="https://www.sgg.gov.ma" target="_blank" rel="noopener">الأمانة العامة للحكومة</a> · <a href="https://adala.justice.gov.ma" target="_blank" rel="noopener">بوابة عدالة (وزارة العدل)</a> · <a href="https://www.courdecassation.ma" target="_blank" rel="noopener">محكمة النقض</a> · <a href="https://www.chambredesrepresentants.ma" target="_blank" rel="noopener">مجلس النواب</a></p>
+          <p style="margin-top:10px;font-size:.85rem;color:#6B7280;line-height:1.9"><b>مكتبات عربية رقمية مفتوحة:</b> <a href="https://dlib.nyu.edu/aco/" target="_blank" rel="noopener">Arabic Collections Online</a> · <a href="https://www.hindawi.org" target="_blank" rel="noopener">مؤسسة هنداوي</a> · <a href="https://www.qdl.qa/ar" target="_blank" rel="noopener">مكتبة قطر الرقمية</a></p>
+          <p style="margin-top:10px;font-size:.85rem;color:#6B7280;line-height:1.9"><b>تفعيل مصدر CORE:</b> سجّل مجاناً في <a href="https://core.ac.uk/services/api" target="_blank" rel="noopener">core.ac.uk/services/api</a> للحصول على مفتاح، ثم أضفه في Vercel ← Settings ← Environment Variables باسم <code>CORE_API_KEY</code> وأعد النشر. يستفيد منه البحث هنا واقتراح البدائل في «فحص الروابط».</p>
+</div>
       </div>
 
       <div class="card" id="res-card" style="display:none">
@@ -190,6 +194,10 @@
       return out;
     }
 
+    async function searchCore(p) {
+      return api.get('/admin/core-search?q=' + encodeURIComponent(p.q) + '&n=' + Math.min(100, p.n) + '&sec=' + p.sec + '&lang=' + p.lang);
+    }
+
     function viewUrl(u) { return 'https://docs.google.com/gview?embedded=1&url=' + encodeURIComponent(u); }
 
     function render() {
@@ -205,7 +213,7 @@
       if (!p.q) { msg('d-msg', 'اكتب كلمات البحث', '#B91C1C'); return; }
       msg('d-msg', 'جارٍ البحث...'); $('imp-msg').innerHTML = '';
       try {
-        var list = p.src === 'hal' ? await searchHal(p) : p.src === 'zenodo' ? await searchZenodo(p) : p.src === 'doaj' ? await searchDoaj(p) : await searchOpenAlex(p);
+        var list = p.src === 'hal' ? await searchHal(p) : p.src === 'zenodo' ? await searchZenodo(p) : p.src === 'doaj' ? await searchDoaj(p) : p.src === 'core' ? await searchCore(p) : await searchOpenAlex(p);
         var seen = {};
         list = list.filter(function (r) {
           if (!r.title || !/^https?:\/\//i.test(r.url) || seen[r.title.toLowerCase()]) return false;
@@ -226,7 +234,7 @@
       var y = parseInt(r.year, 10);
       if (sec === 'articles') { o.journalName = who; if (y) o.publicationYear = y; }
       if (sec === 'books') { o.publisher = who; if (y) o.publicationYear = y; }
-      if (sec === 'theses') { o.university = who || 'غير محدد'; o.degree = 'phd'; if (y) o.defenseYear = y; }
+      if (sec === 'theses') { o.university = who || 'غير محدد'; o.degree = /master|mast[eè]re|mémoire|ماستر|ماجستير|magist/i.test(r.title + ' ' + who) ? 'master' : /licence|bachelor|إجازة|ليسانس/i.test(r.title + ' ' + who) ? 'licence' : 'phd'; if (y) o.defenseYear = y; }
       return o;
     }
     $('d-import').addEventListener('click', async function () {
