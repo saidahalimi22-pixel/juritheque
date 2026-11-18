@@ -123,7 +123,7 @@
   <script>
     requireAuth(['admin']);
     renderUserBar();
-    var API_BASE = location.origin + '/api';
+    var SITE_API = location.origin + '/api';
     var cfg = {}, defs = [], cardDefs = [], pending = { hero: null, logo: null };
 
     function readImage(file, maxW, mime, q) {
@@ -147,7 +147,7 @@
     function bindImage(kind, maxW, mime, q, imgKey, verKey, urlPath, defaultSrc) {
       var f = document.getElementById(kind + '-file'), pv = document.getElementById(kind + '-prev');
       function showCurrent() {
-        pv.src = cfg[verKey] ? API_BASE + urlPath + '?v=' + cfg[verKey] : defaultSrc;
+        pv.src = cfg[verKey] ? SITE_API + urlPath + '?v=' + cfg[verKey] : defaultSrc;
       }
       f.addEventListener('change', async function () {
         if (!f.files[0]) return;
