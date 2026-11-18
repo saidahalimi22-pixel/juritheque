@@ -29,12 +29,11 @@ button,input{font-family:inherit}
 .btn-gold{background:linear-gradient(145deg,var(--gold-bright),var(--gold));color:var(--royal-deep)}
 .btn-outline-gold{background:transparent;color:var(--gold);border:1.5px solid var(--gold)}
 .btn-block{width:100%;justify-content:center;padding:12px;font-size:1rem}
-.hero{--w:min(100vw,103vh,1000px);--h:calc(var(--w)*0.562);background:#06102A;color:#fff;text-align:center;position:relative;overflow:hidden}
+.hero{--w:100vw;--h:calc(var(--w)*0.562);background:#06102A;color:#fff;text-align:center;position:relative;overflow:hidden}
 /* طبقة الامتداد: نفس الصورة تغطي القسم كله بتمويه وإظلام خفيف، فتبدو الخلفية صورة واحدة متصلة */
 .hero-blur{display:none}
 /* الصورة الواضحة كاملة بلا اقتصاص، وتتلاشى في أسفلها وجوانبها داخل طبقة الامتداد */
 .hero-bg{position:absolute;top:0;left:50%;transform:translateX(-50%);width:var(--w);height:var(--h);background:url('hero.jpg') center top/100% 100% no-repeat;pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,#000 62%,transparent 100%);mask-image:linear-gradient(to bottom,#000 62%,transparent 100%)}
-@media(min-width:701px){.hero-bg{-webkit-mask-image:linear-gradient(to bottom,#000 62%,transparent 100%),linear-gradient(to right,transparent,#000 6%,#000 94%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(to bottom,#000 62%,transparent 100%),linear-gradient(to right,transparent,#000 6%,#000 94%,transparent);mask-composite:intersect}}
 /* تظليل متدرج تحت الصورة لتبقى الكلمات والأزرار والأرقام واضحة */
 .hero-body{position:relative;z-index:1;padding:calc(var(--h)*0.77) 20px 30px;background:linear-gradient(to bottom,transparent calc(var(--h)*0.72),rgba(6,16,42,.3) calc(var(--h)*1.05),rgba(6,16,42,.5) 100%)}
 .hero-body p,.hero-body .stat{text-shadow:0 2px 10px rgba(0,0,0,.85)}
@@ -126,15 +125,33 @@ button,input{font-family:inherit}
 .contact-box{background:#fff;border:1px solid #E8ECF0;border-radius:18px;box-shadow:var(--shadow);padding:26px 22px;text-align:center}
 .contact-mail{display:inline-flex;align-items:center;gap:8px;direction:ltr;font-weight:700;font-size:1.05rem;color:var(--royal);background:rgba(212,175,55,.14);border:1px solid rgba(212,175,55,.5);padding:10px 18px;border-radius:30px;text-decoration:none;word-break:break-all}
 .footer-note{text-align:center;padding:20px 16px;color:var(--muted);font-size:.8rem}
+/* الحاسوب: الصورة تملأ العرض كاملاً (بلا جوانب فارغة)، ويُقتطع منها قليل من الأسفل فقط؛ الأزرار فوقها والأرقام تحتها */
+@media(min-width:701px){
+.hero-bg{left:0;transform:none;width:100%;height:46vw;background-size:cover;background-position:center top;-webkit-mask-image:linear-gradient(to bottom,#000 88%,transparent 100%);mask-image:linear-gradient(to bottom,#000 88%,transparent 100%)}
+.hero-body{padding:calc(46vw - 64px) 20px 34px;background:linear-gradient(to bottom,transparent calc(46vw - 70px),var(--royal-deep) calc(46vw + 10px))}
+.hero-body{display:flex;flex-direction:column}
+.hero-btns{order:1;margin-bottom:14px}
+.hero-body>p{order:2;margin:0 0 24px}
+.stats{order:3}
+}
+/* الهاتف: ترويسة مضغوطة ليظهر العنوان كاملاً حتى مع أزرار الإدارة */
+.logo-sub{font-size:.82rem;font-weight:700;color:var(--gold);margin-top:2px;line-height:1.3;white-space:nowrap}
+@media(max-width:700px){
+.logo{gap:8px}.logo img{height:36px}.logo-name{font-size:.95rem;white-space:nowrap}
+.logo-sub{font-size:.75rem}
+#user-name{display:none}.user-chip{padding:4px 8px 4px 5px}
+#btn-admin-top{padding:8px 11px}#btn-admin-top .lbl{display:none}
+.topbar{padding:0 10px}
+}
 </style>
 </head>
 <body>
 <header class="topbar">
-  <div class="logo"><img src="logo-emblem.png" alt="شعار المرصد"><div class="logo-name">المرصد المغربي<div style="font-size:.82rem;font-weight:700;color:var(--gold);margin-top:2px;line-height:1.3">للدراسات والأبحاث القانونية</div></div></div>
+  <div class="logo"><img src="logo-emblem.png" alt="شعار المرصد"><div class="logo-name">المرصد المغربي<div class="logo-sub">للدراسات والأبحاث القانونية</div></div></div>
   <div class="top-actions">
     <div class="user-chip" id="user-chip"><div class="av" id="user-av">م</div><span id="user-name">مستخدم</span><button type="button" onclick="logout()" title="خروج" style="background:none;border:none;color:var(--gold-bright);cursor:pointer;padding:0 4px"><i class="fas fa-sign-out-alt"></i></button></div>
     <button class="btn btn-outline-gold" id="btn-login-top" onclick="show('auth')"><i class="fas fa-user"></i> دخول</button>
-    <button class="btn btn-gold" id="btn-admin-top" onclick="show('admin')" style="display:none"><i class="fas fa-cog"></i> الإدارة</button>
+    <button class="btn btn-gold" id="btn-admin-top" onclick="show('admin')" style="display:none"><i class="fas fa-cog"></i> <span class="lbl">الإدارة</span></button>
   </div>
 </header>
 
@@ -142,7 +159,7 @@ button,input{font-family:inherit}
 <section class="hero">
   <div class="hero-bg" role="img" aria-label="المرصد المغربي للدراسات والأبحاث القانونية — Observatoire Marocain des Études et Recherches Juridiques (OMERJ)"></div>
   <div class="hero-body">
-  <p>تشريع، اجتهادات، مؤتمرات، محاضرات، وأبحاث قانونية</p>
+  <p data-t="hero-tagline" data-label="جملة الواجهة (تحت الصورة)">تشريع، اجتهادات، مؤتمرات، محاضرات، وأبحاث قانونية</p>
   <div class="hero-btns">
     <button class="btn btn-gold" onclick="show('library')"><i class="fas fa-book-open"></i> استكشف المكتبة</button>
     <button class="btn btn-outline-gold" onclick="show('assistant')"><i class="fas fa-robot"></i> المساعد الذكي</button>
@@ -155,27 +172,27 @@ button,input{font-family:inherit}
   </div></div>
 </section>
 <div class="wrap">
-  <div class="sec-title"><h2>أقسام المنصة</h2><p>اختر القسم الذي تريد استكشافه</p></div>
+  <div class="sec-title"><h2 data-t="sec-title" data-label="عنوان قسم الأقسام">أقسام المنصة</h2><p data-t="sec-sub" data-label="الجملة تحت عنوان الأقسام">اختر القسم الذي تريد استكشافه</p></div>
   <div class="grid">
-    <div class="card" onclick="show('library')"><div class="card-icon"><i class="fas fa-landmark"></i></div><h3>المكتبة القانونية</h3><p>قوانين، كتب، أطروحات، مقالات</p></div>
-    <div class="card" onclick="show('jur')"><div class="card-icon"><i class="fas fa-gavel"></i></div><h3>الاجتهادات</h3><p>أحكام وقرارات قضائية</p></div>
-    <div class="card" onclick="show('lectures')"><div class="card-icon"><i class="fas fa-chalkboard-teacher"></i></div><h3>التكوينات</h3><p>محاضرات بيداغوجية • ورشات ودورات</p></div>
-    <div class="card" onclick="show('annonces')"><div class="card-icon"><i class="fas fa-bullhorn"></i></div><h3>الإعلانات</h3><p>ندوات ومؤتمرات • مباريات</p></div>
-    <div class="card" onclick="show('assistant')"><div class="card-icon"><i class="fas fa-brain"></i></div><h3>المساعد الذكي</h3><p>إجابات مبنية على المصادر</p></div>
-    <div class="card" onclick="show('consult')"><div class="card-icon"><i class="fas fa-comments"></i></div><h3>الاستشارة القانونية</h3><p>اطرح سؤالك القانوني</p></div>
-    <div class="card" onclick="show('auth')"><div class="card-icon"><i class="fas fa-user-lock"></i></div><h3>حسابي</h3><p>تسجيل ودخول الأعضاء</p></div>
-    <div class="card" onclick="show('contact')"><div class="card-icon"><i class="fas fa-envelope"></i></div><h3>تواصل معنا</h3><p>راسلنا عبر البريد الإلكتروني</p></div>
-    <div class="card" onclick="show('about')"><div class="card-icon"><i class="fas fa-info-circle"></i></div><h3>من نحن</h3><p>التعريف بالمنصة وأهدافها</p></div>
+    <div class="card" data-card="card-1" onclick="show('library')"><div class="card-icon"><i class="fas fa-landmark"></i></div><h3 data-t="card-1-t" data-label="القسم 1 — العنوان">المكتبة القانونية</h3><p data-t="card-1-d" data-label="القسم 1 — الوصف">قوانين، كتب، أطروحات، مقالات</p></div>
+    <div class="card" data-card="card-2" onclick="show('jur')"><div class="card-icon"><i class="fas fa-gavel"></i></div><h3 data-t="card-2-t" data-label="القسم 2 — العنوان">الاجتهادات</h3><p data-t="card-2-d" data-label="القسم 2 — الوصف">أحكام وقرارات قضائية</p></div>
+    <div class="card" data-card="card-3" onclick="show('lectures')"><div class="card-icon"><i class="fas fa-chalkboard-teacher"></i></div><h3 data-t="card-3-t" data-label="القسم 3 — العنوان">التكوينات</h3><p data-t="card-3-d" data-label="القسم 3 — الوصف">محاضرات بيداغوجية • ورشات ودورات</p></div>
+    <div class="card" data-card="card-4" onclick="show('annonces')"><div class="card-icon"><i class="fas fa-bullhorn"></i></div><h3 data-t="card-4-t" data-label="القسم 4 — العنوان">الإعلانات</h3><p data-t="card-4-d" data-label="القسم 4 — الوصف">ندوات ومؤتمرات • مباريات</p></div>
+    <div class="card" data-card="card-5" onclick="show('assistant')"><div class="card-icon"><i class="fas fa-brain"></i></div><h3 data-t="card-5-t" data-label="القسم 5 — العنوان">المساعد الذكي</h3><p data-t="card-5-d" data-label="القسم 5 — الوصف">إجابات مبنية على المصادر</p></div>
+    <div class="card" data-card="card-6" onclick="show('consult')"><div class="card-icon"><i class="fas fa-comments"></i></div><h3 data-t="card-6-t" data-label="القسم 6 — العنوان">الاستشارة القانونية</h3><p data-t="card-6-d" data-label="القسم 6 — الوصف">اطرح سؤالك القانوني</p></div>
+    <div class="card" data-card="card-7" onclick="show('auth')"><div class="card-icon"><i class="fas fa-user-lock"></i></div><h3 data-t="card-7-t" data-label="القسم 7 — العنوان">حسابي</h3><p data-t="card-7-d" data-label="القسم 7 — الوصف">تسجيل ودخول الأعضاء</p></div>
+    <div class="card" data-card="card-8" onclick="show('contact')"><div class="card-icon"><i class="fas fa-envelope"></i></div><h3 data-t="card-8-t" data-label="القسم 8 — العنوان">تواصل معنا</h3><p data-t="card-8-d" data-label="القسم 8 — الوصف">راسلنا عبر البريد الإلكتروني</p></div>
+    <div class="card" data-card="card-9" onclick="show('about')"><div class="card-icon"><i class="fas fa-info-circle"></i></div><h3 data-t="card-9-t" data-label="القسم 9 — العنوان">من نحن</h3><p data-t="card-9-d" data-label="القسم 9 — الوصف">التعريف بالمنصة وأهدافها</p></div>
   </div>
 </div>
 <footer class="site-footer">
   <div class="footer-grid">
     <div class="footer-col">
       <div class="footer-brand"><img src="logo-emblem.png" alt=""><span>المرصد المغربي<br><small>للدراسات والأبحاث القانونية</small></span></div>
-      <p class="footer-desc">مرجعك المفتوح للقانون المغربي والمقارن: تشريعات واجتهادات وأبحاث ومحاضرات.</p>
+      <p class="footer-desc" data-t="footer-desc" data-label="جملة أسفل الصفحة (تعريف المرصد)">مرجعك المفتوح للقانون المغربي والمقارن: تشريعات واجتهادات وأبحاث ومحاضرات.</p>
     </div>
     <div class="footer-col">
-      <h5>الأقسام</h5>
+      <h5 data-t="footer-h1" data-label="عنوان عمود أسفل الصفحة 1">الأقسام</h5>
       <a href="#" onclick="show('library');return false">المكتبة القانونية</a>
       <a href="#" onclick="show('jur');return false">الاجتهادات القضائية</a>
       <a href="#" onclick="show('lectures');return false">المحاضرات والتكوينات</a>
@@ -183,17 +200,17 @@ button,input{font-family:inherit}
       <a href="#" onclick="show('assistant');return false">المساعد الذكي</a>
     </div>
     <div class="footer-col">
-      <h5>المنصة</h5>
+      <h5 data-t="footer-h2" data-label="عنوان عمود أسفل الصفحة 2">المنصة</h5>
       <a href="#" onclick="show('about');return false">من نحن</a>
       <a href="#" onclick="show('contact');return false">تواصل معنا</a>
       <a href="#" onclick="show('consult');return false">طلب استشارة</a>
     </div>
     <div class="footer-col">
-      <h5>وسائل الاتصال</h5>
+      <h5 data-t="footer-h3" data-label="عنوان عمود أسفل الصفحة 3">وسائل الاتصال</h5>
       <span id="footer-mail" class="footer-mail"></span>
     </div>
   </div>
-  <div class="footer-bottom">© <span id="footer-year"></span> المرصد المغربي للدراسات والأبحاث القانونية (OMERJ) — جميع الحقوق محفوظة. فضاء علمي مفتوح لخدمة البحث العلمي والمعرفة القانونية، تنسب الأعمال لأصحابها ومصادرها الأصلية.</div>
+  <div class="footer-bottom">© <span id="footer-year"></span> <span data-t="footer-copy" data-label="الجملة السفلى (حقوق النشر)">المرصد المغربي للدراسات والأبحاث القانونية (OMERJ) — جميع الحقوق محفوظة. فضاء علمي مفتوح لخدمة البحث العلمي والمعرفة القانونية، تنسب الأعمال لأصحابها ومصادرها الأصلية.</span></div>
 </footer>
 </div>
 
@@ -554,5 +571,6 @@ async function sendMsg(e){
 }
 </script>
 
+<script src="site-config.js"></script>
 </body>
 </html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تخصيص الموقع | المرصد المغربي</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .toolbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--off-white);border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0}
+    .toolbar button{background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 11px;cursor:pointer;font-size:.85rem;font-family:inherit;color:var(--royal-blue)}
+    .toolbar button:hover{border-color:var(--gold)}
+    #about-editor{min-height:340px;max-height:70vh;overflow:auto;border:1px solid var(--border);border-radius:0 0 8px 8px;padding:16px 18px;background:#fff;line-height:2;outline:none;font-size:.97rem}
+    #about-editor:focus{border-color:var(--gold)}
+    #about-editor h1,#about-editor h2,#about-editor h3,#about-editor h4,#about-editor h5,#about-editor h6{color:var(--royal-blue);margin:14px 0 4px;font-size:1.05rem!important;font-weight:800}
+    #about-editor p,#about-editor li,#about-editor span,#about-editor font{font-size:.95rem!important}
+    #about-editor ul,#about-editor ol{padding-right:22px}
+    .hint-text{color:var(--text-muted);font-size:.85rem;margin-top:6px}
+    .actions-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+    .img-row{display:flex;gap:18px;flex-wrap:wrap}
+    .img-box{flex:1;min-width:260px;border:1px solid var(--border);border-radius:12px;padding:14px}
+    .img-box h3{margin:0 0 8px;font-size:1rem;color:var(--royal-blue)}
+    .img-prev{background:#0b1a3d;border-radius:10px;min-height:90px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:10px}
+    .img-prev img{max-width:100%;max-height:200px;display:block}
+    .trow{display:grid;grid-template-columns:150px 1fr 90px;gap:8px;align-items:center;margin-bottom:8px}
+    .trow label{font-size:.85rem;color:var(--text-muted)}
+    .trow input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit}
+    .trow input[type=number]{width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-family:inherit}
+    .crow{display:grid;grid-template-columns:1fr 1.4fr 1.6fr 110px 40px;gap:6px;margin-bottom:8px}
+    .crow input{padding:8px;border:1px solid var(--border);border-radius:8px;font-family:inherit;min-width:0}
+    .hdr{font-weight:700;color:var(--royal-blue);margin:14px 0 8px}
+    @media(max-width:700px){.trow{grid-template-columns:1fr}.crow{grid-template-columns:1fr 1fr}}
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="../index.html" title="الانتقال إلى الصفحة الرئيسية للموقع"><img src="../logo-emblem.png" alt="" class="brand-logo"><span>المرصد المغربي للدراسات والأبحاث القانونية</span></a>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
+      <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="links.html"><i class="fas fa-link"></i> فحص الروابط</a>
+      <a href="site.html" class="active"><i class="fas fa-palette"></i> تخصيص الموقع (الصور والنصوص)</a>
+      <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1>تخصيص الموقع</h1>
+      <div class="topbar-actions"><div class="user-info"></div></div>
+    </div>
+    <div class="content">
+
+      <div class="card">
+        <div class="card-header"><h2><i class="fas fa-image"></i> الصور</h2></div>
+        <div class="card-body">
+          <div class="img-row">
+            <div class="img-box">
+              <h3>صورة الواجهة الرئيسية</h3>
+              <div class="img-prev"><img id="hero-prev" alt=""></div>
+              <input type="file" id="hero-file" accept="image/*">
+              <p class="hint-text">الأفضل صورة أفقية بنسبة 16:9 (مثلاً 1600×900). تُصغَّر تلقائياً.</p>
+              <div class="actions-row"><button class="btn btn-primary" id="hero-save"><i class="fas fa-upload"></i> رفع وحفظ</button><button class="btn btn-outline" id="hero-reset">الصورة الافتراضية</button></div>
+            </div>
+            <div class="img-box">
+              <h3>الشعار الصغير (يظهر في كل الصفحات)</h3>
+              <div class="img-prev"><img id="logo-prev" alt=""></div>
+              <input type="file" id="logo-file" accept="image/*">
+              <p class="hint-text">الأفضل PNG بخلفية شفافة. يُستبدل في الواجهة وفي لوحة الإدارة.</p>
+              <div class="actions-row"><button class="btn btn-primary" id="logo-save"><i class="fas fa-upload"></i> رفع وحفظ</button><button class="btn btn-outline" id="logo-reset">الشعار الافتراضي</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2><i class="fas fa-font"></i> النصوص وأحجام الخط</h2></div>
+        <div class="card-body">
+          <p class="hint-text" style="margin:0 0 10px">عدّل أي جملة أو عنوان. «الحجم %» : 100 = الحجم الحالي، 130 = أكبر بـ30%، 80 = أصغر. اترك الخانة كما هي لإبقاء الافتراضي.</p>
+          <div id="texts-box">جارٍ التحميل...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2><i class="fas fa-th-large"></i> الأقسام في الصفحة الرئيسية</h2></div>
+        <div class="card-body">
+          <div class="hdr">إخفاء أقسام موجودة</div>
+          <div id="hide-box"></div>
+          <div class="hdr">إضافة أقسام جديدة (بطاقة تفتح رابطاً)</div>
+          <p class="hint-text" style="margin:0 0 10px">العنوان، الوصف، اسم أيقونة من Font Awesome (مثل star أو book أو scale-balanced)، والرابط الكامل يبدأ بـ https://</p>
+          <div id="custom-box"></div>
+          <button class="btn btn-outline" id="add-card" type="button"><i class="fas fa-plus"></i> إضافة قسم</button>
+        </div>
+      </div>
+
+      <div class="actions-row" style="margin-bottom:30px">
+        <button class="btn btn-primary" id="save-all"><i class="fas fa-save"></i> حفظ النصوص والأقسام</button>
+        <a class="btn btn-outline" href="../index.html" target="_blank"><i class="fas fa-external-link-alt"></i> معاينة الموقع</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="../site-config.js"></script>
+  <script>
+    requireAuth(['admin']);
+    renderUserBar();
+    var API_BASE = location.origin + '/api';
+    var cfg = {}, defs = [], cardDefs = [], pending = { hero: null, logo: null };
+
+    function readImage(file, maxW, mime, q) {
+      return new Promise(function (resolve, reject) {
+        var fr = new FileReader();
+        fr.onerror = function () { reject(new Error('تعذّرت قراءة الملف')); };
+        fr.onload = function () {
+          var im = new Image();
+          im.onerror = function () { reject(new Error('ملف الصورة غير صالح')); };
+          im.onload = function () {
+            var w = im.width, h = im.height, k = Math.min(1, maxW / w);
+            var c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+            c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+            resolve(c.toDataURL(mime, q));
+          };
+          im.src = fr.result;
+        };
+        fr.readAsDataURL(file);
+      });
+    }
+    function bindImage(kind, maxW, mime, q, imgKey, verKey, urlPath, defaultSrc) {
+      var f = document.getElementById(kind + '-file'), pv = document.getElementById(kind + '-prev');
+      function showCurrent() {
+        pv.src = cfg[verKey] ? API_BASE + urlPath + '?v=' + cfg[verKey] : defaultSrc;
+      }
+      f.addEventListener('change', async function () {
+        if (!f.files[0]) return;
+        try { pending[kind] = await readImage(f.files[0], maxW, mime, q); pv.src = pending[kind]; }
+        catch (e) { showAlert(e.message, 'error'); }
+      });
+      document.getElementById(kind + '-save').addEventListener('click', async function () {
+        if (!pending[kind]) return showAlert('اختر صورة أولاً', 'error');
+        try {
+          var body = {}; body[imgKey] = pending[kind];
+          await api.request('PUT', '/settings', body);
+          pending[kind] = null; f.value = ''; await load(true);
+          showAlert('تم حفظ الصورة. قد تحتاج لتحديث الصفحة (Ctrl+F5) لرؤيتها.', 'success');
+        } catch (e) { showAlert(e.message, 'error'); }
+      });
+      document.getElementById(kind + '-reset').addEventListener('click', async function () {
+        if (!confirm('العودة إلى الصورة الافتراضية؟')) return;
+        try { var body = {}; body[imgKey] = ''; await api.request('PUT', '/settings', body); pending[kind] = null; await load(true); showAlert('تمت العودة للصورة الافتراضية', 'success'); }
+        catch (e) { showAlert(e.message, 'error'); }
+      });
+      return showCurrent;
+    }
+    var showHero = bindImage('hero', 1920, 'image/jpeg', 0.86, 'heroImage', 'heroVersion', '/hero-image', '../hero.jpg');
+    var showLogo = bindImage('logo', 420, 'image/png', 0.92, 'logoImage', 'logoVersion', '/site-logo', '../logo-emblem.png');
+
+    function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+    function renderTexts() {
+      var box = document.getElementById('texts-box'); box.innerHTML = '';
+      defs.forEach(function (d) {
+        var row = document.createElement('div'); row.className = 'trow';
+        var cur = (cfg.texts || {})[d.key] || d.text, sz = (cfg.sizes || {})[d.key] || '';
+        row.innerHTML = '<label>' + esc(d.label) + '</label><input type="text" data-k="' + d.key + '" value="' + esc(cur) + '"><input type="number" min="50" max="250" data-s="' + d.key + '" placeholder="الحجم %" value="' + sz + '">';
+        box.appendChild(row);
+      });
+      var hb = document.getElementById('hide-box'); hb.innerHTML = '';
+      cardDefs.forEach(function (c) {
+        var l = document.createElement('label'); l.style.cssText = 'display:inline-flex;gap:6px;margin:0 0 8px 16px;align-items:center';
+        var on = (cfg.hiddenCards || []).indexOf(c.key) > -1;
+        l.innerHTML = '<input type="checkbox" data-h="' + c.key + '"' + (on ? ' checked' : '') + '> إخفاء «' + esc((cfg.texts || {})[c.key + '-t'] || c.title) + '»';
+        hb.appendChild(l);
+      });
+    }
+    function addCardRow(c) {
+      c = c || { title: '', desc: '', icon: 'star', url: '' };
+      var r = document.createElement('div'); r.className = 'crow';
+      r.innerHTML = '<input placeholder="العنوان" data-c="title" value="' + esc(c.title) + '"><input placeholder="الوصف" data-c="desc" value="' + esc(c.desc) + '"><input placeholder="https://..." dir="ltr" data-c="url" value="' + esc(c.url) + '"><input placeholder="star" dir="ltr" data-c="icon" value="' + esc(c.icon || 'star') + '"><button class="btn btn-outline" type="button" title="حذف">×</button>';
+      r.querySelector('button').addEventListener('click', function () { r.remove(); });
+      document.getElementById('custom-box').appendChild(r);
+    }
+    document.getElementById('add-card').addEventListener('click', function () { addCardRow(); });
+
+    async function loadDefs() {
+      var html = await (await fetch('../index.html', { cache: 'no-store' })).text();
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      defs = [].map.call(doc.querySelectorAll('[data-t]'), function (e) {
+        return { key: e.getAttribute('data-t'), label: e.getAttribute('data-label') || e.getAttribute('data-t'), text: e.textContent.trim() };
+      });
+      cardDefs = [].map.call(doc.querySelectorAll('[data-card]'), function (e) {
+        var t = e.querySelector('h3'); return { key: e.getAttribute('data-card'), title: t ? t.textContent.trim() : e.getAttribute('data-card') };
+      });
+    }
+    async function load(keepDefs) {
+      try {
+        cfg = await api.request('GET', '/settings');
+        if (!keepDefs || !defs.length) await loadDefs();
+        showHero(); showLogo(); renderTexts();
+        var cb = document.getElementById('custom-box'); cb.innerHTML = '';
+        (cfg.customCards || []).forEach(addCardRow);
+      } catch (e) { showAlert(e.message, 'error'); }
+    }
+    document.getElementById('save-all').addEventListener('click', async function () {
+      var texts = {}, sizes = {}, hidden = [], custom = [];
+      defs.forEach(function (d) {
+        var v = document.querySelector('[data-k="' + d.key + '"]').value.trim();
+        if (v && v !== d.text) texts[d.key] = v;
+        var s = document.querySelector('[data-s="' + d.key + '"]').value;
+        if (s) sizes[d.key] = Number(s);
+      });
+      document.querySelectorAll('[data-h]').forEach(function (c) { if (c.checked) hidden.push(c.getAttribute('data-h')); });
+      document.querySelectorAll('#custom-box .crow').forEach(function (r) {
+        var o = {}; r.querySelectorAll('[data-c]').forEach(function (i) { o[i.getAttribute('data-c')] = i.value.trim(); });
+        if (o.title || o.url) custom.push(o);
+      });
+      var bad = custom.filter(function (c) { return !c.title || !/^https?:\/\//i.test(c.url); });
+      if (bad.length) return showAlert('كل قسم جديد يحتاج عنواناً ورابطاً يبدأ بـ https://', 'error');
+      try {
+        await api.request('PUT', '/settings', { texts: texts, sizes: sizes, hiddenCards: hidden, customCards: custom });
+        showAlert('تم الحفظ. حدّث صفحة الموقع لرؤية التغييرات.', 'success');
+        await load(true);
+      } catch (e) { showAlert(e.message, 'error'); }
+    });
+    load();
+  </script>
+</body>
+</html>

@@ -211,9 +211,13 @@ function sanitizeHtml(input) {
   return out.join('').trim();
 }
 
+function jsonSetting(v, dflt) {
+  try { return v ? JSON.parse(v) : dflt; } catch (e) { return dflt; }
+}
+
 async function readSettings() {
   try {
-    const rows = await prisma.setting.findMany();
+    const rows = await prisma.setting.findMany({ where: { key: { notIn: ['heroImage', 'logoImage'] } } });
     return Object.fromEntries(rows.map((r) => [r.key, r.value]));
   } catch (e) {
     return {}; // الجدول غير جاهز بعد: نستعمل القيم الافتراضية
@@ -230,10 +234,32 @@ router.get(
       contactEmail: st.contactEmail || '',
       aboutHtml: st.aboutHtml || DEFAULT_ABOUT_HTML,
       aboutIsDefault: !st.aboutHtml,
+      heroVersion: st.heroVersion || '',
+      logoVersion: st.logoVersion || '',
+      texts: jsonSetting(st.siteTexts, {}),
+      sizes: jsonSetting(st.siteSizes, {}),
+      hiddenCards: jsonSetting(st.hiddenCards, []),
+      customCards: jsonSetting(st.customCards, []),
       defaultAboutHtml: DEFAULT_ABOUT_HTML,
     });
   })
 );
+
+const imageRoute = (path, key) =>
+  router.get(
+    path,
+    ah(async (req, res) => {
+      let row = null;
+      try { row = await prisma.setting.findUnique({ where: { key } }); } catch (e) {}
+      const m = row && /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(row.value || '');
+      if (!m) return res.status(404).end();
+      res.set('Content-Type', m[1]);
+      res.set('Cache-Control', 'public, max-age=31536000, immutable');
+      res.send(Buffer.from(m[2], 'base64'));
+    })
+  );
+imageRoute('/hero-image', 'heroImage');
+imageRoute('/site-logo', 'logoImage');
 
 router.put(
   '/settings',
@@ -251,6 +277,51 @@ router.put(
       const clean = sanitizeHtml(b.aboutHtml).slice(0, 60000);
       // نص فارغ = العودة إلى النص الافتراضي
       await save('aboutHtml', clean.replace(/<[^>]*>/g, '').trim() ? clean : '');
+    }
+    const saveImage = async (field, verKey, imgKey, maxLen) => {
+      if (b[field] === undefined) return;
+      if (b[field] === '') {
+        await save(imgKey, '');
+        await save(verKey, '');
+        return;
+      }
+      const img = String(b[field]);
+      if (img.length > maxLen || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(img))
+        throw httpError(400, 'الصورة غير صالحة أو كبيرة جدًا (استعمل JPG أو PNG أو WEBP)');
+      await save(imgKey, img);
+      await save(verKey, String(Date.now()));
+    };
+    await saveImage('heroImage', 'heroVersion', 'heroImage', 3500000);
+    await saveImage('logoImage', 'logoVersion', 'logoImage', 1500000);
+    const KEY_RE = /^[a-z0-9_-]{1,40}$/;
+    if (b.texts !== undefined) {
+      const out = {};
+      Object.entries(b.texts || {}).slice(0, 150).forEach(([k, v]) => {
+        const t = String(v == null ? '' : v).trim().slice(0, 500);
+        if (KEY_RE.test(k) && t) out[k] = t;
+      });
+      await save('siteTexts', JSON.stringify(out));
+    }
+    if (b.sizes !== undefined) {
+      const out = {};
+      Object.entries(b.sizes || {}).slice(0, 150).forEach(([k, v]) => {
+        const n = Math.round(Number(v));
+        if (KEY_RE.test(k) && n >= 50 && n <= 250 && n !== 100) out[k] = n;
+      });
+      await save('siteSizes', JSON.stringify(out));
+    }
+    if (b.hiddenCards !== undefined) {
+      const arr = (Array.isArray(b.hiddenCards) ? b.hiddenCards : []).map(String).filter((k) => KEY_RE.test(k)).slice(0, 40);
+      await save('hiddenCards', JSON.stringify(arr));
+    }
+    if (b.customCards !== undefined) {
+      const arr = (Array.isArray(b.customCards) ? b.customCards : []).slice(0, 12).map((c) => ({
+        title: String((c && c.title) || '').trim().slice(0, 60),
+        desc: String((c && c.desc) || '').trim().slice(0, 120),
+        url: String((c && c.url) || '').trim().slice(0, 300),
+        icon: /^[a-z0-9-]{1,30}$/.test(String((c && c.icon) || '')) ? c.icon : 'star',
+      })).filter((c) => c.title && /^https?:\/\//i.test(c.url));
+      await save('customCards', JSON.stringify(arr));
     }
     const st = await readSettings();
     res.json({ ok: true, contactEmail: st.contactEmail || '', aboutHtml: st.aboutHtml || DEFAULT_ABOUT_HTML });
