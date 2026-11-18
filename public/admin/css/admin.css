@@ -53,7 +53,7 @@ body {
 .sidebar-brand .brand-logo { height: 38px; width: auto; flex-shrink: 0; border-radius: 7px; box-shadow: 0 0 0 1.5px #D4AF37; }
 .sidebar-brand { text-decoration: none; color: inherit; cursor: pointer; }
 .sidebar-brand:hover span { text-decoration: underline; }
-.sidebar-brand span { font-size: 1.05rem; line-height: 1.35; }
+.sidebar-brand span { font-size: .92rem; line-height: 1.45; font-weight: 700; }
 
 .sidebar-brand .logo-icon {
   width: 40px;
