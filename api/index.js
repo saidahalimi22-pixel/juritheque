@@ -145,7 +145,7 @@ function noteFail(key) {
 
 const router = express.Router();
 
-router.get('/health', (req, res) => res.json({ status: 'ok', service: 'Moroccan Observatory of Legal Studies and Research API' }));
+router.get('/health', (req, res) => res.json({ status: 'ok', service: 'Moroccan Observatory of Legal Studies and Research API', core: !!getCoreKey() }));
 
 /* ============================================================
  * إعدادات المنصة: نص «من نحن» + بريد التواصل (قابلة للتعديل من لوحة الإدارة)
@@ -897,7 +897,7 @@ const ALT_SOURCES = {
     return ((j && j.response && j.response.docs) || []).map((d) => ({ title: [].concat(d.title_s || [''])[0], url: d.uri_s || '' }));
   },
   CORE: async (q) => {
-    if (!process.env.CORE_API_KEY) return [];
+    if (!getCoreKey()) return [];
     try {
       const w = await coreSearch(decodeURIComponent(q), 5);
       return w.map((x) => ({ title: x.title || '', url: x.downloadUrl || (x.sourceFulltextUrls || [])[0] || '' }));
@@ -913,6 +913,17 @@ const ALT_SOURCES = {
   },
 };
 
+/** يقرأ مفتاح CORE من متغيرات البيئة بتسامح مع اختلاف حالة الأحرف أو المسافات الزائدة في الاسم/القيمة */
+function getCoreKey() {
+  const names = Object.keys(process.env);
+  const name = names.find((k) => k.trim().toUpperCase() === 'CORE_API_KEY') || names.find((k) => /^core[_\s-]*(api)?[_\s-]*(key|token)$/i.test(k.trim()));
+  return name ? String(process.env[name] || '').trim().replace(/^["']|["']$/g, '') : '';
+}
+function coreHint() {
+  const similar = Object.keys(process.env).filter((k) => /core/i.test(k));
+  return similar.length ? ' (وُجدت متغيرات باسم: ' + similar.join('، ') + ' — تأكد أن الاسم بالضبط CORE_API_KEY وأن القيمة غير فارغة)' : ' (لم يُعثر على أي متغير اسمه CORE_API_KEY في هذا النشر — تأكد من اسم المتغير ومن تفعيل Production ثم أعد النشر)';
+}
+
 /* ============================================================
  * CORE: أكبر مجمّع لمستودعات الجامعات المفتوحة (يشمل مستودعات عربية)
  * يحتاج مفتاحاً مجانياً: متغير البيئة CORE_API_KEY (من https://core.ac.uk/services/api)
@@ -923,7 +934,7 @@ async function coreSearch(q, n) {
   const t = setTimeout(() => ctrl.abort(), 20000);
   try {
     const r = await fetch('https://api.core.ac.uk/v3/search/works?limit=' + n + '&q=' + encodeURIComponent(q), {
-      headers: { Authorization: 'Bearer ' + process.env.CORE_API_KEY, Accept: 'application/json' },
+      headers: { Authorization: 'Bearer ' + getCoreKey(), Accept: 'application/json' },
       signal: ctrl.signal,
     });
     if (!r.ok) throw httpError(502, 'CORE رجع الخطأ ' + r.status + (r.status === 401 ? ' (المفتاح غير صالح)' : r.status === 429 ? ' (تجاوزتَ الحد المسموح، انتظر قليلاً)' : ''));
@@ -938,7 +949,7 @@ router.get(
   '/admin/core-search',
   ...staffOnly,
   ah(async (req, res) => {
-    if (!process.env.CORE_API_KEY) throw httpError(400, CORE_NO_KEY);
+    if (!getCoreKey()) throw httpError(400, CORE_NO_KEY + coreHint());
     const q = String(req.query.q || '').trim().slice(0, 200);
     if (q.length < 2) throw httpError(400, 'اكتب كلمات البحث');
     const n = Math.min(100, Math.max(10, parseInt(req.query.n, 10) || 50));
