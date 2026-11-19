@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إكمال بيانات المراجع | المرصد المغربي</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .bar{height:10px;background:#E5E7EB;border-radius:6px;overflow:hidden;margin:12px 0}
+    .bar>div{height:100%;width:0;background:var(--gold);transition:width .3s}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+    .stats span{background:var(--off-white);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.85rem}
+    td textarea{width:100%;min-width:260px;font-family:inherit;font-size:.82rem;line-height:1.7;border:1px solid var(--border);border-radius:6px;padding:6px}
+    .doi{direction:ltr;text-align:left;font-size:.82rem;word-break:break-all}
+    .pct{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:700;background:#D1FAE5;color:#065F46}
+    .pct.mid{background:#FEF3C7;color:#92400E}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="../index.html" title="الانتقال إلى الصفحة الرئيسية للموقع"><img src="../logo-emblem.png" alt="" class="brand-logo"><span>المرصد المغربي للدراسات والأبحاث القانونية</span></a>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
+      <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="enrich.html" class="active"><i class="fas fa-magic"></i> إكمال بيانات المراجع</a>
+      <a href="links.html"><i class="fas fa-link"></i> فحص الروابط</a>
+      <a href="site.html"><i class="fas fa-palette"></i> تخصيص الموقع (الصور والنصوص)</a>
+      <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar"><h1>إكمال بيانات المراجع القديمة</h1><div class="topbar-actions"><div class="user-info"></div></div></div>
+    <div class="content">
+      <div class="card">
+        <div class="card-body">
+          <p style="line-height:1.9;margin:0 0 12px">تبحث الأداة عن <b>DOI</b> و<b>ملخص</b> المراجع التي ينقصها ذلك، بالمطابقة مع عنوان كل مرجع في OpenAlex وCrossref وHAL. <b>لا تُغيّر الأداة شيئًا قبل موافقتك</b>: تعرض لك المقترحات (مع نسبة التطابق والعنوان الذي طابقته) وتحدد ما تريد تطبيقه. ولا تستبدل أبدًا بيانات موجودة أصلًا، فهي تملأ الخانات الفارغة فقط.</p>
+          <div class="filters">
+            <select id="sec">
+              <option value="articles">المقالات</option><option value="theses">الرسائل والأطروحات</option>
+              <option value="books">الكتب</option><option value="reports">التقارير والدراسات</option>
+              <option value="lectures">المحاضرات والعروض</option>
+            </select>
+            <button class="btn btn-primary" id="start"><i class="fas fa-play"></i> ابدأ البحث</button>
+            <button class="btn btn-outline" id="stop" style="display:none"><i class="fas fa-stop"></i> إيقاف</button>
+          </div>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="ai" checked> اكتب ملخصًا عربيًا موجزًا بالذكاء الاصطناعي اعتمادًا على ملخص المصدر فقط (إن لم يُفعَّل المساعد الذكي يُستعمل ملخص المصدر كما هو)</label>
+          <div class="bar"><div id="prog"></div></div>
+          <div id="status" style="font-size:.9rem;color:#6B7280"></div>
+          <div class="stats" id="stats"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>المقترحات <span id="cnt" style="color:#6B7280;font-size:.9rem"></span></h2>
+          <div><button class="btn btn-sm btn-outline" id="all">تحديد الكل</button> <button class="btn btn-sm btn-outline" id="none">إلغاء التحديد</button> <button class="btn btn-sm btn-outline" id="strong">تحديد التطابق القوي فقط (90%+)</button></div>
+        </div>
+        <div style="overflow-x:auto">
+          <table><thead><tr><th></th><th>المرجع</th><th>DOI المقترح</th><th>الملخص المقترح (يمكنك تعديله)</th><th>المطابقة</th></tr></thead>
+          <tbody id="res"><tr><td colspan="5" style="text-align:center;color:#9CA3AF">لم يبدأ البحث بعد</td></tr></tbody></table>
+        </div>
+        <div class="card-body"><button class="btn btn-primary" id="apply"><i class="fas fa-check"></i> تطبيق المقترحات المحددة</button> <span id="amsg" style="margin-right:10px"></span></div>
+      </div>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin', 'editor']);
+    renderUserBar();
+    var ABS = { articles: 'abstract', theses: 'abstract', books: 'description', reports: 'description', lectures: 'description' };
+    var rows = [], running = false, st = { scanned: 0, missing: 0, found: 0, nf: 0 };
+    function $(i) { return document.getElementById(i); }
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function stats() {
+      $('stats').innerHTML = '<span>تم فحص: <b>' + st.scanned + '</b></span><span>ينقصها بيانات: <b>' + st.missing + '</b></span><span style="color:#065F46">وُجد لها اقتراح: <b>' + st.found + '</b></span><span style="color:#6B7280">لم يُعثر عليها: <b>' + st.nf + '</b></span>';
+      $('cnt').textContent = '(' + rows.length + ')';
+    }
+    function render() {
+      $('res').innerHTML = rows.length ? rows.map(function (r, i) {
+        return '<tr><td><input type="checkbox" data-i="' + i + '"' + (r.score >= 80 ? ' checked' : '') + '></td>' +
+          '<td style="min-width:200px"><b>' + esc(r.item.title) + '</b><div style="font-size:.76rem;color:#6B7280;margin-top:4px">طابق: ' + esc(r.matchedTitle) + ' (' + esc(r.source) + ')</div></td>' +
+          '<td class="doi">' + (r.needDoi && r.doi ? '<a href="https://doi.org/' + esc(r.doi) + '" target="_blank" rel="noopener">' + esc(r.doi) + '</a>' : '<span style="color:#9CA3AF">' + (r.item.doi ? 'موجود أصلًا' : '—') + '</span>') + '</td>' +
+          '<td>' + (r.needAbs && r.abstract ? '<textarea rows="4" data-a="' + i + '">' + esc(r.summary || r.abstract) + '</textarea>' : '<span style="color:#9CA3AF">' + (r.needAbs ? '—' : 'موجود أصلًا') + '</span>') + '</td>' +
+          '<td><span class="pct' + (r.score < 85 ? ' mid' : '') + '">' + r.score + '%</span></td></tr>';
+      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#9CA3AF">' + (running ? 'جارٍ البحث...' : 'لا توجد مقترحات') + '</td></tr>';
+      stats();
+    }
+    async function scan() {
+      var sec = $('sec').value, key = ABS[sec], items = [], page = 1, pages = 1;
+      rows = []; st = { scanned: 0, missing: 0, found: 0, nf: 0 }; running = true; render();
+      $('status').textContent = 'جارٍ جلب المراجع...';
+      while (page <= pages && running) {
+        var r = await api.get('/' + sec + '?limit=100&page=' + page);
+        pages = (r.meta && r.meta.totalPages) || 1;
+        (r.data || []).forEach(function (it) { if (!it.doi || !String(it[key] || '').trim()) items.push(it); });
+        st.scanned += (r.data || []).length; page++;
+      }
+      st.missing = items.length; stats();
+      var next = 0, doneN = 0;
+      async function worker() {
+        while (running && next < items.length) {
+          var it = items[next++];
+          try {
+            var l = await api.post('/admin/enrich-lookup', { section: sec, id: it.id });
+            if (l.found && ((!it.doi && l.doi) || (!String(it[key] || '').trim() && l.abstract))) {
+              rows.push({ item: it, matchedTitle: l.matchedTitle, source: l.source, score: l.score, doi: l.doi, abstract: l.abstract, needDoi: !it.doi, needAbs: !String(it[key] || '').trim(), summary: '' });
+              st.found++;
+            } else st.nf++;
+          } catch (e) { st.nf++; }
+          doneN++;
+          $('prog').style.width = Math.round(doneN / Math.max(1, items.length) * 100) + '%';
+          $('status').textContent = 'جارٍ البحث... ' + doneN + ' / ' + items.length;
+          if (doneN % 3 === 0) render();
+        }
+      }
+      await Promise.all([worker(), worker()]);
+      render();
+      if ($('ai').checked && running) await summarize();
+      $('status').textContent = running ? 'اكتمل البحث. راجع المقترحات ثم اضغط «تطبيق المقترحات المحددة».' : 'توقف البحث.';
+      running = false; $('start').style.display = ''; $('stop').style.display = 'none'; render();
+    }
+    async function summarize() {
+      var todo = [];
+      rows.forEach(function (r, i) { if (r.needAbs && r.abstract && r.abstract.length >= 40) todo.push(i); });
+      for (var k = 0; k < todo.length && running; k += 5) {
+        $('status').textContent = 'جارٍ كتابة الملخصات... ' + Math.min(k + 5, todo.length) + ' / ' + todo.length;
+        var chunk = todo.slice(k, k + 5);
+        try {
+          var r = await api.post('/admin/summarize', { items: chunk.map(function (i) { return { title: rows[i].item.title, abstract: rows[i].abstract }; }) });
+          r.summaries.forEach(function (s, m) { if (s.summary) rows[chunk[m]].summary = s.summary; });
+        } catch (e) { /* نُبقي ملخص المصدر */ }
+        render();
+      }
+    }
+    $('start').addEventListener('click', function () { if (running) return; this.style.display = 'none'; $('stop').style.display = ''; $('prog').style.width = '0'; scan().catch(function (e) { $('status').textContent = 'خطأ: ' + e.message; running = false; $('start').style.display = ''; $('stop').style.display = 'none'; }); });
+    $('stop').addEventListener('click', function () { running = false; });
+    function setAll(f) { document.querySelectorAll('#res input[type=checkbox]').forEach(function (c) { c.checked = f(rows[+c.getAttribute('data-i')]); }); }
+    $('all').addEventListener('click', function () { setAll(function () { return true; }); });
+    $('none').addEventListener('click', function () { setAll(function () { return false; }); });
+    $('strong').addEventListener('click', function () { setAll(function (r) { return r.score >= 90; }); });
+    $('apply').addEventListener('click', async function () {
+      var picks = [];
+      document.querySelectorAll('#res input[type=checkbox]:checked').forEach(function (c) { picks.push(+c.getAttribute('data-i')); });
+      if (!picks.length) { $('amsg').textContent = 'لم تحدد شيئًا'; return; }
+      if (!confirm('سيتم تحديث ' + picks.length + ' مرجعًا (ملء الخانات الفارغة فقط). متابعة؟')) return;
+      var sec = $('sec').value, key = ABS[sec], ok = 0, fail = 0, btn = this;
+      btn.disabled = true;
+      for (var n = 0; n < picks.length; n++) {
+        var i = picks[n], r = rows[i], body = {};
+        if (r.needDoi && r.doi) body.doi = r.doi;
+        var ta = document.querySelector('textarea[data-a="' + i + '"]');
+        var text = ta ? ta.value.trim() : '';
+        if (r.needAbs && text) body[key] = text;
+        if (!Object.keys(body).length) continue;
+        $('amsg').textContent = 'جارٍ الحفظ... ' + (n + 1) + ' / ' + picks.length;
+        try { await api.put('/' + sec + '/' + r.item.id, body); ok++; r.done = true; } catch (e) { fail++; }
+      }
+      rows = rows.filter(function (r) { return !r.done; }); render();
+      $('amsg').innerHTML = '<span style="color:#065F46">تم تحديث ' + ok + ' مرجعًا</span>' + (fail ? ' <span style="color:#B91C1C">— فشل ' + fail + '</span>' : '');
+      btn.disabled = false;
+    });
+    render();
+  </script>
+</body>
+</html>

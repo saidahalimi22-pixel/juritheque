@@ -978,6 +978,8 @@ router.get(
         venue: ((w.journals && w.journals[0] && w.journals[0].title) || w.publisher || 'CORE'),
         url,
         license: '',
+        doi: w.doi || '',
+        abstract: w.abstract || '',
       });
     });
     res.json(rows);
@@ -1072,6 +1074,170 @@ router.post(
       }
     }
     res.json(out);
+  })
+);
+
+/* ============================================================
+ * نقل مرجع من قسم إلى آخر (للمدير فقط)
+ * نحوّل الحقول المشتركة (العنوان، الملخص، الجهة، السنة، DOI، الروابط، اللغة، التصنيف)
+ * ============================================================ */
+const yearOf = (d) => (d ? new Date(d).getUTCFullYear() : null);
+const jan1 = (y) => (y ? new Date(Date.UTC(y, 0, 1)) : null);
+const MOVE_MAP = {
+  laws: {
+    read: (i) => ({ title: i.title, text: i.summary, org: '', year: yearOf(i.publicationDate), doi: null, fileUrl: i.fileUrl, url2: i.sourceUrl, lang: i.language, keywords: [] }),
+    write: (c) => ({ title: c.title, summary: c.text, fileUrl: c.fileUrl, sourceUrl: c.url2, language: c.lang || 'ar', publicationDate: jan1(c.year) }),
+  },
+  jurisprudence: {
+    read: (i) => ({ title: i.subject || i.decisionNumber, text: i.summary, org: i.court, year: yearOf(i.decisionDate), doi: null, fileUrl: i.fileUrl, url2: i.sourceUrl, lang: i.language, keywords: i.keywords || [] }),
+    write: (c) => ({ decisionNumber: String(c.title).slice(0, 190), subject: String(c.title).slice(0, 480), court: c.org || 'غير محدد', summary: c.text, keywords: c.keywords || [], fileUrl: c.fileUrl, sourceUrl: c.url2, language: c.lang || 'ar', decisionDate: jan1(c.year) }),
+  },
+  books: {
+    read: (i) => ({ title: i.title, text: i.description, org: i.publisher, year: i.publicationYear, doi: i.doi, fileUrl: i.fileUrl, url2: null, lang: i.language, keywords: [] }),
+    write: (c) => ({ title: c.title, description: c.text, publisher: c.org, publicationYear: c.year, doi: c.doi, fileUrl: c.fileUrl || c.url2, language: c.lang || 'ar' }),
+  },
+  theses: {
+    read: (i) => ({ title: i.title, text: i.abstract, org: i.university, year: i.defenseYear, doi: i.doi, fileUrl: i.fileUrl, url2: null, lang: i.language, keywords: i.keywords || [] }),
+    write: (c) => ({ title: c.title, abstract: c.text, university: c.org || 'غير محدد', defenseYear: c.year, degree: 'phd', keywords: c.keywords || [], doi: c.doi, fileUrl: c.fileUrl || c.url2, language: c.lang || 'ar' }),
+  },
+  articles: {
+    read: (i) => ({ title: i.title, text: i.abstract, org: i.journalName, year: i.publicationYear, doi: i.doi, fileUrl: i.fileUrl, url2: null, lang: i.language, keywords: i.keywords || [] }),
+    write: (c) => ({ title: c.title, abstract: c.text, journalName: c.org, publicationYear: c.year, keywords: c.keywords || [], doi: c.doi, fileUrl: c.fileUrl || c.url2, isOpenAccess: true, language: c.lang || 'ar' }),
+  },
+  reports: {
+    read: (i) => ({ title: i.title, text: i.description, org: i.issuingBody, year: yearOf(i.publicationDate), doi: i.doi, fileUrl: i.fileUrl, url2: null, lang: i.language, keywords: [] }),
+    write: (c) => ({ title: c.title, description: c.text, issuingBody: c.org, publicationDate: jan1(c.year), doi: c.doi, fileUrl: c.fileUrl || c.url2, language: c.lang || 'ar' }),
+  },
+  lectures: {
+    read: (i) => ({ title: i.title, text: i.description, org: i.instructorName, year: null, doi: i.doi, fileUrl: i.fileUrl, url2: i.videoUrl, lang: 'ar', keywords: [] }),
+    write: (c) => ({ title: c.title, description: c.text, instructorName: c.org, type: 'lecture', doi: c.doi, fileUrl: c.fileUrl, videoUrl: c.url2 }),
+  },
+};
+
+router.post(
+  '/admin/move',
+  ...adminOnly,
+  ah(async (req, res) => {
+    const { from, to, id } = req.body || {};
+    if (!MOVE_MAP[from] || !MOVE_MAP[to] || from === to) throw httpError(400, 'قسم غير صالح');
+    const src = SECTIONS[from], dst = SECTIONS[to];
+    const srcDel = prisma[lowerFirst(src.model)], dstDel = prisma[lowerFirst(dst.model)];
+    const item = await srcDel.findUnique({ where: { id: String(id || '') } });
+    if (!item) throw httpError(404, 'المرجع غير موجود');
+    const common = MOVE_MAP[from].read(item);
+    const data = cleanData(dst.model, { ...MOVE_MAP[to].write(common), categoryId: item.categoryId || null, statusDoc: item.statusDoc || 'draft' }, true);
+    if (hasField(dst.model, 'createdById') && item.createdById) data.createdById = item.createdById;
+    if (hasField(dst.model, 'viewsCount') && item.viewsCount) data.viewsCount = item.viewsCount;
+    const created = await prisma.$transaction(async (tx) => {
+      const c = await tx[lowerFirst(dst.model)].create({ data });
+      await tx[lowerFirst(src.model)].delete({ where: { id: item.id } });
+      return c;
+    });
+    res.json({ ok: true, id: created.id, to });
+  })
+);
+
+/* ============================================================
+ * ملخص عربي موجز للمراجع المستوردة (يعتمد فقط على ملخص المصدر، ولا يخترع محتوى)
+ * يستعمل مفتاح AI_API_KEY نفسه؛ وإن لم يتوفر يُرجع ملخص المصدر كما هو
+ * ============================================================ */
+const stripHtml = (t) => String(t || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+
+router.post(
+  '/admin/summarize',
+  limit('summarize', 40, 60 * 60 * 1000),
+  ...staffOnly,
+  ah(async (req, res) => {
+    const items = (Array.isArray((req.body || {}).items) ? req.body.items : []).slice(0, 6);
+    const base = (process.env.AI_BASE_URL || 'https://api.x.ai/v1').replace(/\/$/, '');
+    const summaries = await Promise.all(items.map(async (it) => {
+      const title = stripHtml(it.title).slice(0, 300);
+      const abs = stripHtml(it.abstract).slice(0, 2500);
+      if (abs.length < 40) return { summary: '', ai: false };
+      const fallback = { summary: abs.length > 900 ? abs.slice(0, 900).replace(/\s+\S*$/, '') + '…' : abs, ai: false };
+      if (!process.env.AI_API_KEY) return fallback;
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 20000);
+      try {
+        const r = await fetch(base + '/chat/completions', {
+          method: 'POST',
+          signal: ctrl.signal,
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.AI_API_KEY },
+          body: JSON.stringify({
+            model: process.env.AI_MODEL || 'grok-3',
+            temperature: 0.1,
+            messages: [
+              { role: 'system', content: 'أنت محرر علمي. لخّص المرجع بالعربية الفصحى في 2 إلى 3 جمل (نحو 50 إلى 90 كلمة) اعتماداً على العنوان والملخص المرفقين فقط. لا تضف أي معلومة أو رقم أو اسم غير وارد فيهما. اكتب الملخص وحده دون مقدمات أو عناوين.' },
+              { role: 'user', content: 'العنوان: ' + title + '\nالملخص الأصلي: ' + abs },
+            ],
+          }),
+        });
+        const j = await r.json().catch(() => ({}));
+        const text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+        const clean = stripHtml(text).slice(0, 1200);
+        return r.ok && clean.length > 30 ? { summary: clean, ai: true } : fallback;
+      } catch (e) {
+        return fallback;
+      } finally { clearTimeout(t); }
+    }));
+    res.json({ summaries, aiEnabled: !!process.env.AI_API_KEY });
+  })
+);
+
+/* ============================================================
+ * إكمال بيانات المراجع القديمة: بحث عن DOI وملخص بحسب العنوان (يُراجَع قبل الحفظ)
+ * ============================================================ */
+const ENRICH_ABS = { books: 'description', theses: 'abstract', articles: 'abstract', reports: 'description', lectures: 'description' };
+function oaAbstractText(ix) {
+  if (!ix) return '';
+  const w = [];
+  Object.keys(ix).forEach((k) => ix[k].forEach((pos) => { w[pos] = k; }));
+  return w.join(' ');
+}
+const bareDoi = (d) => String(d || '').replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').trim();
+
+router.post(
+  '/admin/enrich-lookup',
+  limit('enrich', 600, 60 * 60 * 1000),
+  ...staffOnly,
+  ah(async (req, res) => {
+    const section = String((req.body || {}).section || '');
+    const absKey = ENRICH_ABS[section];
+    if (!absKey) throw httpError(400, 'قسم غير مدعوم');
+    const item = await prisma[lowerFirst(SECTIONS[section].model)].findUnique({ where: { id: String((req.body || {}).id || '') } });
+    if (!item) throw httpError(404, 'المرجع غير موجود');
+    const title = String(item.title || '').replace(/\s+/g, ' ').trim();
+    if (title.length < 8) return res.json({ found: false, reason: 'العنوان قصير جداً للبحث' });
+    const year = item.publicationYear || item.defenseYear || (item.publicationDate ? new Date(item.publicationDate).getUTCFullYear() : null);
+    const q = encodeURIComponent(title.slice(0, 250));
+    const [oa, cr, hal] = await Promise.all([
+      fetchJsonSafe('https://api.openalex.org/works?per-page=5&select=title,doi,publication_year,abstract_inverted_index&search=' + q, 7000),
+      fetchJsonSafe('https://api.crossref.org/works?rows=5&select=title,DOI,abstract,issued&query.bibliographic=' + q, 7000),
+      fetchJsonSafe('https://api.archives-ouvertes.fr/search/?q=' + q + '&fl=title_s,doiId_s,abstract_s,producedDateY_i&rows=5&wt=json', 7000),
+    ]);
+    const cands = [];
+    ((oa && oa.results) || []).forEach((w) => cands.push({ src: 'OpenAlex', title: w.title || '', doi: bareDoi(w.doi), year: w.publication_year, abstract: oaAbstractText(w.abstract_inverted_index) }));
+    ((cr && cr.message && cr.message.items) || []).forEach((w) => cands.push({ src: 'Crossref', title: (w.title || [])[0] || '', doi: w.DOI || '', year: w.issued && w.issued['date-parts'] && w.issued['date-parts'][0] && w.issued['date-parts'][0][0], abstract: stripHtml(w.abstract) }));
+    ((hal && hal.response && hal.response.docs) || []).forEach((w) => cands.push({ src: 'HAL', title: [].concat(w.title_s || [''])[0], doi: w.doiId_s || '', year: w.producedDateY_i, abstract: stripHtml([].concat(w.abstract_s || [''])[0]) }));
+    cands.forEach((c) => {
+      c.score = titleSimilarity(title, c.title);
+      if (year && c.year && Math.abs(Number(c.year) - Number(year)) > 2) c.score -= 0.25;
+    });
+    const good = cands.filter((c) => c.score >= 0.7).sort((x, y) => y.score - x.score);
+    if (!good.length) return res.json({ found: false, reason: 'لم يُعثر على مرجع مطابق للعنوان' });
+    const withDoi = good.find((c) => c.doi);
+    const withAbs = good.find((c) => c.abstract && c.abstract.length >= 40);
+    const best = good[0];
+    res.json({
+      found: true,
+      matchedTitle: best.title,
+      score: Math.round(best.score * 100),
+      source: best.src,
+      doi: withDoi ? withDoi.doi : '',
+      abstract: withAbs ? withAbs.abstract.slice(0, 2500) : '',
+      hasDoi: !!item.doi,
+      hasAbstract: !!String(item[absKey] || '').trim(),
+    });
   })
 );
 

@@ -29,6 +29,7 @@
       <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
       <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
       <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="enrich.html"><i class="fas fa-magic"></i> إكمال بيانات المراجع</a>
       <a href="links.html"><i class="fas fa-link"></i> فحص الروابط</a>
       <a href="site.html"><i class="fas fa-palette"></i> تخصيص الموقع (الصور والنصوص)</a>
       <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
@@ -63,6 +64,7 @@
               <div class="form-group"><label>حالة النشر</label><select id="f-statusDoc"><option value="published">منشور</option><option value="draft">مسودة</option></select></div>
               <div class="form-group full"><label>الوصف</label><textarea id="f-description" rows="3"></textarea></div>
               <div class="form-group"><label>رابط الفيديو</label><input type="url" id="f-videoUrl"></div>
+              <div class="form-group"><label>DOI (إن وُجد)</label><input type="text" id="f-doi" dir="ltr" placeholder="10.xxxx/xxxxx"></div>
               <div class="form-group"><label>رابط ملف مرفق</label><input type="url" id="f-fileUrl"></div>
 
               <div class="form-group">
@@ -106,7 +108,7 @@
         { name: 'title' }, { name: 'instructorName' }, { name: 'type', default: 'lecture' },
         { name: 'durationMinutes', type: 'number' }, { name: 'isFree', default: 'true' },
         { name: 'statusDoc', default: 'published' }, { name: 'description' },
-        { name: 'videoUrl' }, { name: 'fileUrl' }
+        { name: 'videoUrl' }, { name: 'fileUrl' }, { name: 'doi' }
       ],
       columns: [
         { key: 'title' }, { key: 'instructorName' },

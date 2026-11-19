@@ -188,6 +188,7 @@ model Book {
   edition          String?
   categoryId       String?        @map("category_id")
   description      String?
+  doi                String?
   fileUrl          String?        @map("file_url")
   coverUrl         String?        @map("cover_url")
   pagesCount       Int?           @map("pages_count")
@@ -215,6 +216,7 @@ model Thesis {
   defenseYear     Int?           @map("defense_year")
   defenseDate     DateTime?      @map("defense_date") @db.Date
   abstract        String?
+  doi                String?
   keywords        String[]
   categoryId      String?        @map("category_id")
   fileUrl         String?        @map("file_url")
@@ -267,6 +269,7 @@ model Report {
   issuingBody      String?        @map("issuing_body")
   publicationDate  DateTime?      @map("publication_date") @db.Date
   description      String?
+  doi                String?
   categoryId       String?        @map("category_id")
   fileUrl          String?        @map("file_url")
   language         String         @default("ar")
@@ -328,6 +331,7 @@ model Lecture {
   type             LectureType    @default(lecture)
   durationMinutes  Int?           @map("duration_minutes")
   description      String?
+  doi                String?
   videoUrl         String?        @map("video_url")
   fileUrl          String?        @map("file_url")
   coverUrl         String?        @map("cover_url")

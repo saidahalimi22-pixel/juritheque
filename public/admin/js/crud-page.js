@@ -37,6 +37,7 @@ function createCrudPage(config) {
         }).join('');
         return '<tr>' + cells +
           '<td>' +
+          (typeof MOVE_SECTIONS !== 'undefined' && MOVE_SECTIONS[endpoint.replace('/', '')] ? '<button class="btn btn-sm btn-outline" title="نقل إلى قسم آخر" onclick="window.__moveItem(\'' + item.id + '\')"><i class="fas fa-exchange-alt"></i></button> ' : '') +
           '<button class="btn btn-sm btn-outline" onclick="window.__editItem(\'' + item.id + '\')"><i class="fas fa-edit"></i></button> ' +
           '<button class="btn btn-sm btn-outline" style="color:#EF4444" onclick="window.__deleteItem(\'' + item.id + '\')"><i class="fas fa-trash"></i></button>' +
           '</td></tr>';
@@ -73,6 +74,11 @@ function createCrudPage(config) {
   window.__editItem = function(id) {
     const item = cache.find(function(x) { return x.id === id; });
     if (item) openForm(item);
+  };
+
+  window.__moveItem = function(id) {
+    const item = cache.find(function(x) { return x.id === id; });
+    moveItem(endpoint.replace('/', ''), id, item ? (item[titleField] || '') : '', loadItems);
   };
 
   window.__deleteItem = async function(id) {

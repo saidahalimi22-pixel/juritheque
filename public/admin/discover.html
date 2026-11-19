@@ -29,6 +29,7 @@
       <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
       <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
       <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="enrich.html"><i class="fas fa-magic"></i> إكمال بيانات المراجع</a>
       <a href="links.html"><i class="fas fa-link"></i> فحص الروابط</a>
       <a href="site.html"><i class="fas fa-palette"></i> تخصيص الموقع (الصور والنصوص)</a>
       <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
@@ -45,7 +46,7 @@
           <p style="color:#6B7280;font-size:.9rem;margin-bottom:10px">تُجلب النتائج مباشرة من مستودعات علمية مفتوحة، ولا يظهر إلا ما له <b>رابط PDF مباشر</b>. لا يُضاف شيء إلى موقعك قبل أن تحدّده وتضغط «استيراد».</p>
           <div class="form-grid">
             <div class="form-group"><label>القسم</label>
-              <select id="d-sec"><option value="articles">المقالات</option><option value="theses">الرسائل والأطروحات</option><option value="books">الكتب</option></select></div>
+              <select id="d-sec"><option value="articles">المقالات</option><option value="theses">الرسائل والأطروحات</option><option value="books">الكتب</option><option value="reports">التقارير والدراسات</option><option value="lectures">المحاضرات والعروض</option><option value="jurisprudence">الاجتهادات والأحكام القضائية</option></select></div>
             <div class="form-group"><label>المصدر</label>
               <select id="d-src">
                 <option value="openalex">OpenAlex (مقالات وكتب وأطروحات من آلاف المستودعات)</option>
@@ -63,6 +64,7 @@
           <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="d-law" checked> حصر النتائج في مجال القانون (OpenAlex)</label>
           <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="d-ma"> الباحثون من مؤسسات مغربية فقط (OpenAlex)</label>
           <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="d-lic" checked> المراجع ذات الترخيص المفتوح الصريح فقط (مثل CC-BY) إن توفرت المعلومة</label>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="d-ai" checked> عند الاستيراد: اكتب ملخصاً عربياً موجزاً بالذكاء الاصطناعي اعتماداً على ملخص المصدر فقط (إن لم يُفعَّل المساعد الذكي يُستعمل ملخص المصدر كما هو)</label>
           <div class="form-actions" style="margin-top:14px"><button class="btn btn-primary" id="d-go"><i class="fas fa-search"></i> بحث</button></div>
           <div id="d-msg" style="margin-top:10px"></div>
           <p style="margin-top:14px;font-size:.85rem;color:#6B7280;line-height:1.9">مصادر عربية ومغربية للبحث اليدوي (لا تتيح واجهة بحث آلية مفتوحة، فتُفتح في تبويب جديد): <a href="https://revues.imist.ma" target="_blank" rel="noopener">منصة المجلات العلمية المغربية</a> · <a href="https://toubkal.imist.ma" target="_blank" rel="noopener">Toubkal (أطروحات مغربية)</a> · <a href="https://asjp.cerist.dz" target="_blank" rel="noopener">ASJP (المجلات الجزائرية)</a> · <a href="https://doaj.org" target="_blank" rel="noopener">DOAJ</a></p>
@@ -104,9 +106,16 @@
     }
     var LANGS = { ar: 'ar', fr: 'fr', en: 'en', ara: 'ar', fre: 'fr', fra: 'fr', eng: 'en' };
 
+    function oaAbs(ix) {
+      if (!ix) return '';
+      var w = [];
+      Object.keys(ix).forEach(function (k) { ix[k].forEach(function (pos) { w[pos] = k; }); });
+      return w.join(' ');
+    }
     async function searchOpenAlex(p) {
-      var type = { articles: 'article', theses: 'dissertation', books: 'book|book-chapter' }[p.sec];
-      var f = ['open_access.is_oa:true', 'type:' + type];
+      var type = { articles: 'article', theses: 'dissertation', books: 'book|book-chapter', reports: 'report' }[p.sec];
+      var f = ['open_access.is_oa:true'];
+      if (type) f.push('type:' + type);
       if (p.law) f.push('concepts.id:C199539241');
       if (p.lang) f.push('language:' + p.lang);
       if (p.ma) f.push('authorships.institutions.country_code:MA');
@@ -120,7 +129,8 @@
           out.push({
             title: w.title || w.display_name || '', year: w.publication_year || '', lang: LANGS[w.language] || w.language || '',
             authors: (w.authorships || []).slice(0, 3).map(function (a) { return a.author && a.author.display_name; }).filter(Boolean).join('، '),
-            venue: (loc.source && loc.source.display_name) || '', url: pdf, license: loc.license || ''
+            venue: (loc.source && loc.source.display_name) || '', url: pdf, license: loc.license || '',
+            doi: (w.doi || '').replace(/^https?:\/\/doi\.org\//i, ''), abstract: oaAbs(w.abstract_inverted_index)
           });
         });
         if (!list.length) break;
@@ -128,24 +138,25 @@
       return out;
     }
     async function searchHal(p) {
-      var dt = { articles: 'ART', theses: 'THESE', books: '(OUV OR COUV)' }[p.sec];
+      var dt = { articles: 'ART', theses: 'THESE', books: '(OUV OR COUV)', reports: 'REPORT', lectures: '(COURS OR PRESCONF)', jurisprudence: '(ART OR COMM OR OTHER)' }[p.sec];
       var fq = ['docType_s:' + dt, 'domain_s:shs.droit', 'submitType_s:file'];
       if (p.lang) fq.push('language_s:' + p.lang);
       var url = 'https://api.archives-ouvertes.fr/search/?q=' + encodeURIComponent(p.q) + fq.map(function (x) { return '&fq=' + encodeURIComponent(x); }).join('') +
-        '&fl=' + encodeURIComponent('title_s,authFullName_s,producedDateY_i,fileMain_s,language_s,licence_s,journalTitle_s,uri_s') + '&rows=' + p.n + '&wt=json';
+        '&fl=' + encodeURIComponent('title_s,authFullName_s,producedDateY_i,fileMain_s,language_s,licence_s,journalTitle_s,uri_s,doiId_s,abstract_s') + '&rows=' + p.n + '&wt=json';
       var j = await getJson(url, 'HAL');
       return ((j.response && j.response.docs) || []).filter(function (d) { return d.fileMain_s; }).map(function (d) {
         var lg = Array.isArray(d.language_s) ? d.language_s[0] : d.language_s;
         return { title: [].concat(d.title_s || [''])[0], year: d.producedDateY_i || '', lang: LANGS[lg] || lg || '',
-          authors: (d.authFullName_s || []).slice(0, 3).join('، '), venue: d.journalTitle_s || 'HAL', url: d.fileMain_s, license: d.licence_s || '' };
+          authors: (d.authFullName_s || []).slice(0, 3).join('، '), venue: d.journalTitle_s || 'HAL', url: d.fileMain_s, license: d.licence_s || '',
+          doi: d.doiId_s || '', abstract: [].concat(d.abstract_s || [''])[0] };
       });
     }
     async function searchZenodo(p) {
-      var st = { articles: 'article', theses: 'thesis', books: 'book' }[p.sec];
+      var zt = { articles: 'type=publication&subtype=article', theses: 'type=publication&subtype=thesis', books: 'type=publication&subtype=book', reports: 'type=publication&subtype=report', lectures: 'type=presentation', jurisprudence: 'type=publication' }[p.sec];
       var size = 25, pages = Math.max(1, Math.min(4, Math.ceil(p.n / size))), hits = [];
       // محاولات متدرجة: بعض معاملات Zenodo قد ترفضها الواجهة، فنبسّط الطلب عند الخطأ 400
       var variants = [
-        function (pg) { return 'https://zenodo.org/api/records?q=' + encodeURIComponent(p.q) + '&type=publication&subtype=' + st + '&access_status=open&size=' + size + '&page=' + pg; },
+        function (pg) { return 'https://zenodo.org/api/records?q=' + encodeURIComponent(p.q) + '&' + zt + '&access_status=open&size=' + size + '&page=' + pg; },
         function (pg) { return 'https://zenodo.org/api/records?q=' + encodeURIComponent(p.q + ' AND access_right:open') + '&type=publication&size=' + size + '&page=' + pg; },
         function (pg) { return 'https://zenodo.org/api/records?q=' + encodeURIComponent(p.q) + '&size=' + size + '&page=' + pg; }
       ];
@@ -172,7 +183,8 @@
         var lng = md.language || (md.languages && md.languages[0] && md.languages[0].id) || '';
         out.push({ title: md.title || '', year: (md.publication_date || '').substring(0, 4), lang: LANGS[lng] || '',
           authors: (md.creators || []).slice(0, 3).map(function (c) { return c.name || (c.person_or_org && c.person_or_org.name); }).filter(Boolean).join('، '),
-          venue: (md.journal && md.journal.title) || 'Zenodo', url: link, license: typeof lic === 'string' ? lic : '' });
+          venue: (md.journal && md.journal.title) || 'Zenodo', url: link, license: typeof lic === 'string' ? lic : '',
+          doi: md.doi || h.doi || '', abstract: md.description || '' });
       });
       return out.slice(0, p.n);
     }
@@ -189,7 +201,8 @@
         var lic = (jr.license && jr.license[0] && jr.license[0].type) || '';
         out.push({ title: b.title || '', year: b.year || '', lang: LANGS[lg] || lg,
           authors: (b.author || []).slice(0, 3).map(function (a) { return a.name; }).filter(Boolean).join('، '),
-          venue: jr.title || 'DOAJ', url: ft.url, license: lic });
+          venue: jr.title || 'DOAJ', url: ft.url, license: lic,
+          doi: ((b.identifier || []).filter(function (x) { return x.type === 'doi'; })[0] || {}).id || '', abstract: b.abstract || '' });
       });
       return out;
     }
@@ -228,29 +241,58 @@
     $('sel-all').addEventListener('click', function () { document.querySelectorAll('#res-body input').forEach(function (c) { c.checked = true; }); });
     $('sel-none').addEventListener('click', function () { document.querySelectorAll('#res-body input').forEach(function (c) { c.checked = false; }); });
 
+    var ABS_KEY = { articles: 'abstract', theses: 'abstract', books: 'description', reports: 'description', lectures: 'description', jurisprudence: 'summary' };
+    function plain(t) { return String(t || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim(); }
     function toRow(sec, r, n) {
       var lang = (r.lang || 'ar').slice(0, 5), who = [r.authors, r.venue].filter(Boolean).join(' — ');
       var o = { __row: n, title: r.title.slice(0, 480), language: lang, fileUrl: r.url, statusDoc: 'published' };
       var y = parseInt(r.year, 10);
+      var doi = String(r.doi || '').replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').trim();
+      if (doi) o.doi = doi;
       if (sec === 'articles') { o.journalName = who; if (y) o.publicationYear = y; }
       if (sec === 'books') { o.publisher = who; if (y) o.publicationYear = y; }
       if (sec === 'theses') { o.university = who || 'غير محدد'; o.degree = /master|mast[eè]re|mémoire|ماستر|ماجستير|magist/i.test(r.title + ' ' + who) ? 'master' : /licence|bachelor|إجازة|ليسانس/i.test(r.title + ' ' + who) ? 'licence' : 'phd'; if (y) o.defenseYear = y; }
+      if (sec === 'reports') { o.issuingBody = who; if (y) o.publicationDate = y + '-01-01'; }
+      if (sec === 'lectures') { o.instructorName = r.authors || ''; o.type = 'lecture'; }
+      if (sec === 'jurisprudence') { o.decisionNumber = r.title.slice(0, 150); o.subject = r.title.slice(0, 480); o.court = r.venue || 'غير محدد'; if (y) o.decisionDate = y + '-01-01'; }
       return o;
     }
+    // ملخصات: إما ملخص المصدر كما هو، أو ملخص عربي موجز بالذكاء الاصطناعي
+    async function fillSummaries(sec, rows, srcRows, useAi) {
+      var key = ABS_KEY[sec], i;
+      for (i = 0; i < rows.length; i++) {
+        var a = plain(srcRows[i].abstract);
+        if (a) rows[i][key] = a.length > 1500 ? a.slice(0, 1500).replace(/\s+\S*$/, '') + '…' : a;
+      }
+      if (!useAi) return 0;
+      var ai = 0;
+      for (i = 0; i < rows.length; i += 5) {
+        msg('imp-msg', 'جارٍ كتابة الملخصات... ' + Math.min(i + 5, rows.length) + ' / ' + rows.length);
+        var chunk = [], idx = [];
+        for (var k = i; k < Math.min(i + 5, rows.length); k++) { var ab = plain(srcRows[k].abstract); if (ab.length >= 40) { chunk.push({ title: srcRows[k].title, abstract: ab }); idx.push(k); } }
+        if (!chunk.length) continue;
+        try {
+          var r = await api.post('/admin/summarize', { items: chunk });
+          r.summaries.forEach(function (s, m) { if (s.summary) { rows[idx[m]][key] = s.summary; if (s.ai) ai++; } });
+        } catch (e) { /* نُبقي ملخص المصدر */ }
+      }
+      return ai;
+    }
     $('d-import').addEventListener('click', async function () {
-      var sec = $('d-sec').value, rows = [];
-      document.querySelectorAll('#res-body input:checked').forEach(function (c) { var i = +c.getAttribute('data-i'); rows.push(toRow(sec, results[i], i + 1)); });
+      var sec = $('d-sec').value, rows = [], srcRows = [];
+      document.querySelectorAll('#res-body input:checked').forEach(function (c) { var i = +c.getAttribute('data-i'); rows.push(toRow(sec, results[i], i + 1)); srcRows.push(results[i]); });
       if (!rows.length) { msg('imp-msg', 'لم تحدد شيئاً', '#B91C1C'); return; }
       if (!confirm('سيتم استيراد ' + rows.length + ' مرجعاً ونشرها مباشرة. متابعة؟')) return;
       var btn = this, tot = { created: 0, skipped: 0, failed: [] };
       btn.disabled = true;
       try {
+        var aiCount = await fillSummaries(sec, rows, srcRows, $('d-ai').checked);
         for (var i = 0; i < rows.length; i += 50) {
           msg('imp-msg', 'جارٍ الاستيراد... ' + Math.min(i + 50, rows.length) + ' / ' + rows.length);
           var r = await api.post('/import/' + sec, { rows: rows.slice(i, i + 50), skipDuplicates: true });
           tot.created += r.created; tot.skipped += r.skipped; tot.failed = tot.failed.concat(r.failed);
         }
-        msg('imp-msg', 'اكتمل: أُضيف <b>' + tot.created + '</b>، مكرّر تم تخطيه <b>' + tot.skipped + '</b>، فشل <b>' + tot.failed.length + '</b>' +
+        msg('imp-msg', 'اكتمل: أُضيف <b>' + tot.created + '</b>' + (aiCount ? ' (منها ' + aiCount + ' بملخص مكتوب بالذكاء الاصطناعي)' : '') + '، مكرّر تم تخطيه <b>' + tot.skipped + '</b>، فشل <b>' + tot.failed.length + '</b>' +
           (tot.failed.length ? '<ul>' + tot.failed.slice(0, 8).map(function (f) { return '<li>' + esc(f.error) + '</li>'; }).join('') + '</ul>' : ''), '#065F46');
       } catch (e) { msg('imp-msg', 'توقف الاستيراد: ' + esc(e.message), '#B91C1C'); }
       btn.disabled = false;

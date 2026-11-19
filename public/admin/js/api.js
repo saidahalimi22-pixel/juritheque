@@ -212,3 +212,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 })();
+
+// نقل مرجع إلى قسم آخر (نافذة اختيار القسم)
+var MOVE_SECTIONS = { laws: 'القوانين', jurisprudence: 'الاجتهادات القضائية', books: 'الكتب', theses: 'الرسائل والأطروحات', articles: 'المقالات', reports: 'التقارير والدراسات', lectures: 'المحاضرات والعروض' };
+function moveItem(section, id, title, done) {
+  if (!MOVE_SECTIONS[section]) return;
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  var opts = Object.keys(MOVE_SECTIONS).filter(function (k) { return k !== section; }).map(function (k) { return '<option value="' + k + '">' + MOVE_SECTIONS[k] + '</option>'; }).join('');
+  var safe = String(title || '').replace(/[<>&"]/g, '');
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:22px;max-width:440px;width:100%;direction:rtl;font-family:inherit">' +
+    '<h3 style="margin:0 0 6px">نقل إلى قسم آخر</h3>' +
+    (safe ? '<p style="margin:0 0 12px;color:#6B7280;font-size:.9rem">' + safe + '</p>' : '') +
+    '<label style="display:block;margin-bottom:6px;font-weight:700">القسم الجديد</label>' +
+    '<select id="mv-to" style="width:100%;padding:10px;border:1px solid #D1D5DB;border-radius:8px">' + opts + '</select>' +
+    '<p style="color:#92400E;font-size:.8rem;line-height:1.8;margin:12px 0 0">تُنقل البيانات المشتركة (العنوان، الملخص، الجهة، السنة، DOI، الروابط). وقد تُفقد بعض الحقول الخاصة بالقسم الأصلي، فراجع المرجع بعد النقل.</p>' +
+    '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-primary" id="mv-ok">نقل</button><button class="btn btn-outline" id="mv-cancel">إلغاء</button></div></div>';
+  document.body.appendChild(ov);
+  ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+  document.getElementById('mv-cancel').onclick = function () { ov.remove(); };
+  document.getElementById('mv-ok').onclick = async function () {
+    var btn = this; btn.disabled = true; btn.textContent = 'جارٍ النقل...';
+    try {
+      await api.post('/admin/move', { from: section, id: id, to: document.getElementById('mv-to').value });
+      ov.remove(); showAlert('تم نقل المرجع', 'success'); if (done) done();
+    } catch (e) { btn.disabled = false; btn.textContent = 'نقل'; showAlert(e.message, 'error'); }
+  };
+}
