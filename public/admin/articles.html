@@ -60,6 +60,7 @@
               <div class="form-group"><label>المجلة</label><input type="text" id="f-journalName"></div>
               <div class="form-group"><label>السنة</label><input type="number" id="f-publicationYear"></div>
               <div class="form-group"><label>DOI</label><input type="text" id="f-doi"></div>
+              <div class="form-group"><label>نسخة PDF على المنصة (رابط مخزَّن؛ احذفه لإلغاء نشر الملف)</label><input type="url" id="f-hostedFileUrl" dir="ltr"></div>
               <div class="form-group"><label>وصول مفتوح</label><select id="f-isOpenAccess"><option value="false">لا</option><option value="true">نعم</option></select></div>
               <div class="form-group"><label>حالة النشر</label><select id="f-statusDoc"><option value="published">منشور</option><option value="draft">مسودة</option></select></div>
               <div class="form-group full"><label>الملخص</label><textarea id="f-abstract" rows="3"></textarea></div>
@@ -104,7 +105,7 @@
       endpoint: '/articles',
       fields: [
         { name: 'title' }, { name: 'journalName' }, { name: 'publicationYear', type: 'number' },
-        { name: 'doi' }, { name: 'isOpenAccess', default: 'false' },
+        { name: 'doi' }, { name: 'hostedFileUrl' }, { name: 'isOpenAccess', default: 'false' },
         { name: 'statusDoc', default: 'published' }, { name: 'abstract' }, { name: 'fileUrl' }
       ],
       columns: [

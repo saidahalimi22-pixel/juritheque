@@ -162,6 +162,7 @@ model Law {
   summary           String?
   fullText          String?        @map("full_text")
   fileUrl           String?        @map("file_url")
+  hostedFileUrl     String?        @map("hosted_file_url")
   sourceUrl         String?        @map("source_url")
   language          String         @default("ar")
   pagesCount        Int?           @map("pages_count")
@@ -190,6 +191,7 @@ model Book {
   description      String?
   doi                String?
   fileUrl          String?        @map("file_url")
+  hostedFileUrl     String?        @map("hosted_file_url")
   coverUrl         String?        @map("cover_url")
   pagesCount       Int?           @map("pages_count")
   language         String         @default("ar")
@@ -220,6 +222,7 @@ model Thesis {
   keywords        String[]
   categoryId      String?        @map("category_id")
   fileUrl         String?        @map("file_url")
+  hostedFileUrl     String?        @map("hosted_file_url")
   pagesCount      Int?           @map("pages_count")
   language        String         @default("ar")
   statusDoc       DocumentStatus @default(published) @map("status_doc")
@@ -248,6 +251,7 @@ model Article {
   keywords         String[]
   categoryId       String?        @map("category_id")
   fileUrl          String?        @map("file_url")
+  hostedFileUrl     String?        @map("hosted_file_url")
   isOpenAccess     Boolean        @default(false) @map("is_open_access")
   language         String         @default("ar")
   statusDoc        DocumentStatus @default(published) @map("status_doc")
@@ -272,6 +276,7 @@ model Report {
   doi                String?
   categoryId       String?        @map("category_id")
   fileUrl          String?        @map("file_url")
+  hostedFileUrl     String?        @map("hosted_file_url")
   language         String         @default("ar")
   statusDoc        DocumentStatus @default(published) @map("status_doc")
   viewsCount       Int            @default(0) @map("views_count")
@@ -298,6 +303,7 @@ model Jurisprudence {
   keywords        String[]
   categoryId      String?        @map("category_id")
   fileUrl         String?        @map("file_url")
+  hostedFileUrl     String?        @map("hosted_file_url")
   sourceUrl       String?        @map("source_url")
   language        String         @default("ar")
   statusDoc       DocumentStatus @default(published) @map("status_doc")
@@ -334,6 +340,7 @@ model Lecture {
   doi                String?
   videoUrl         String?        @map("video_url")
   fileUrl          String?        @map("file_url")
+  hostedFileUrl     String?        @map("hosted_file_url")
   coverUrl         String?        @map("cover_url")
   categoryId       String?        @map("category_id")
   isFree           Boolean        @default(true) @map("is_free")

@@ -105,6 +105,8 @@
           '<td><div class="row-actions">' +
           '<button class="btn btn-sm btn-outline" onclick="findAlt(' + k + ')"' + (p.sugLoading ? ' disabled' : '') + '><i class="fas fa-search"></i> ' + (p.sugLoading ? 'جارٍ البحث...' : 'ابحث عن بديل') + '</button>' +
           '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'replace\')">استبدال الرابط</button>' +
+          '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'title\')">تعديل العنوان</button>' +
+          '<button class="btn btn-sm btn-outline" onclick="pdfCopy(' + k + ')">نسخة PDF</button>' +
           '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'remove\')">إزالة الرابط</button>' +
           (p.isDraft ? '' : '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'draft\')">تحويل لمسودة</button>') +
           '<button class="btn btn-sm btn-outline" style="color:#EF4444" onclick="act(' + k + ',\'delete\')"><i class="fas fa-trash"></i></button>' +
@@ -132,13 +134,97 @@
       catch (e) { p.sug = { verdict: 'error', candidates: [], archive: null }; }
       p.sugLoading = false; render();
     }
+    var TITLEK = { jurisprudence: 'subject' };
+    var ABSK = { laws: 'summary', jurisprudence: 'summary', books: 'description', theses: 'abstract', articles: 'abstract', reports: 'description', lectures: 'description', announcements: 'description' };
+    var DOI_SECS = ['books', 'theses', 'articles', 'reports', 'lectures'];
+    var HOSTED_SECS = ['laws', 'jurisprudence', 'books', 'theses', 'articles', 'reports', 'lectures'];
+    var aiOn = null;
     async function adopt(k, j) {
       var p = problems[k]; if (!p || !p.sug) return;
-      var url = j === 'a' ? p.sug.archive : (p.sug.candidates[j] || {}).url;
-      if (!url) return;
-      if (!confirm('اعتماد هذا الرابط لهذا المرجع؟\n' + url)) return;
-      try { var b = {}; b[p.field] = url; await api.put('/' + p.section + '/' + p.id, b); showAlert('تم تحديث الرابط', 'success'); problems.splice(k, 1); render(); }
-      catch (e) { showAlert(e.message, 'error'); }
+      var cand = j === 'a' ? { url: p.sug.archive, title: '', source: 'أرشيف الإنترنت', score: 0 } : p.sug.candidates[j];
+      if (!cand || !cand.url) return;
+      if (aiOn === null) { try { aiOn = !!(await api.get('/health')).ai; } catch (e) { aiOn = false; } }
+      openAdopt(p, cand, 'link');
+    }
+    // نافذة الاعتماد: الرابط + تحديث العنوان/DOI/الملخص + نسخة PDF للمراجعة (لا تُنشر إلا بموافقتك)
+    function openAdopt(p, cand, mode) {
+      var sec = p.section, hasMeta = mode === 'link' && cand.title, canHost = HOSTED_SECS.indexOf(sec) !== -1;
+      var state = { cached: null };
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto';
+      var abs = cand.abstract && cand.abstract.length >= 40;
+      ov.innerHTML = '<div style="background:#fff;border-radius:14px;padding:20px;max-width:560px;width:100%;direction:rtl;max-height:94vh;overflow:auto;font-size:.92rem;line-height:1.8">' +
+        '<h3 style="margin:0 0 8px">' + (mode === 'link' ? 'اعتماد الرابط الجديد' : 'نسخة PDF على المنصة') + '</h3>' +
+        '<p style="margin:0 0 10px;color:#6B7280">المرجع الحالي: <b>' + esc(p.title) + '</b></p>' +
+        (mode === 'link' ? '<div style="direction:ltr;text-align:left;word-break:break-all;background:#F3F4F6;border-radius:8px;padding:8px 10px;font-size:.8rem">' + esc(cand.url) + '</div>' : '') +
+        (hasMeta ? '<hr style="margin:14px 0;border:none;border-top:1px solid #E5E7EB">' +
+          '<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="ad-title" checked style="margin-top:6px"><span>تحديث عنوان المرجع ليطابق المرجع الذي يحيل عليه الرابط الجديد</span></label>' +
+          '<input type="text" id="ad-title-v" value="' + esc(cand.title) + '" style="width:100%;margin:6px 0 10px;padding:8px;border:1px solid #D1D5DB;border-radius:8px">' +
+          ((cand.doi && DOI_SECS.indexOf(sec) !== -1) || abs ?
+            '<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="ad-meta" checked style="margin-top:6px"><span>تحديث ' + ((cand.doi && DOI_SECS.indexOf(sec) !== -1) ? 'DOI' : '') + ((cand.doi && DOI_SECS.indexOf(sec) !== -1 && abs) ? ' و' : '') + (abs ? 'الملخص' : '') + ' من المرجع الجديد' + (cand.doi && DOI_SECS.indexOf(sec) !== -1 ? ' <span style="direction:ltr;display:inline-block;color:#6B7280">(' + esc(cand.doi) + ')</span>' : '') + '</span></label>' : '') +
+          (abs ? '<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="ad-ai" ' + (aiOn ? 'checked' : 'disabled') + ' style="margin-top:6px"><span>كتابة ملخص عربي موجز بالذكاء الاصطناعي' + (aiOn ? '' : ' (غير مفعّل، سيُستعمل ملخص المصدر)') + '</span></label>' :
+            '<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="ad-clear" checked style="margin-top:6px"><span>مسح الملخص القديم (لأنه يخص المرجع السابق ولا ملخص متوفر للجديد)</span></label>') : '') +
+        (canHost ? '<hr style="margin:14px 0;border:none;border-top:1px solid #E5E7EB"><b>نسخة PDF على المنصة (اختياري)</b>' +
+          '<p style="margin:2px 0 6px;color:#6B7280;font-size:.82rem">تُنزَّل أولًا للمراجعة ولا تُنشر مع المرجع إلا إذا وافقتَ عليها. استعمل هذا الخيار للمراجع ذات الترخيص المفتوح فقط.</p>' +
+          '<input type="url" id="ad-pdf" dir="ltr" value="' + esc(cand.pdf || (mode === 'file' ? p.url : '')) + '" placeholder="رابط ملف PDF مباشر" style="width:100%;padding:8px;border:1px solid #D1D5DB;border-radius:8px;text-align:left">' +
+          '<div style="margin-top:8px"><button type="button" class="btn btn-sm btn-outline" id="ad-dl"><i class="fas fa-download"></i> تنزيل نسخة PDF للمراجعة</button> <span id="ad-dl-msg" style="font-size:.82rem"></span></div>' +
+          '<div id="ad-choice" style="display:none;margin-top:8px;background:#FEF9C3;border-radius:8px;padding:10px">' +
+            '<a id="ad-prev" href="#" target="_blank" rel="noopener">افتح الملف للمعاينة</a>' +
+            '<label style="display:block;margin-top:6px"><input type="radio" name="ad-pub" value="no" checked> نشر الرابط فقط (لا يُنشر الملف)</label>' +
+            '<label style="display:block"><input type="radio" name="ad-pub" value="yes"> أوافق على الملف: انشره مع الرابط</label>' +
+          '</div>' : '') +
+        '<div style="display:flex;gap:8px;margin-top:18px"><button class="btn btn-primary" id="ad-ok">' + (mode === 'link' ? 'اعتماد وحفظ' : 'حفظ') + '</button><button class="btn btn-outline" id="ad-cancel">إلغاء</button></div></div>';
+      document.body.appendChild(ov);
+      function $$(id) { return document.getElementById(id); }
+      async function close(discard) {
+        if (discard && state.cached) { try { await api.post('/admin/discard-file', { url: state.cached }); } catch (e) { /* ignore */ } }
+        ov.remove();
+      }
+      $$('ad-cancel').onclick = function () { close(true); };
+      if (canHost) $$('ad-dl').onclick = async function () {
+        var u = $$('ad-pdf').value.trim(); if (!/^https?:\/\//i.test(u)) { $$('ad-dl-msg').textContent = 'اكتب رابط PDF مباشرًا'; return; }
+        var btn = this; btn.disabled = true; $$('ad-dl-msg').style.color = '#6B7280'; $$('ad-dl-msg').textContent = 'جارٍ التنزيل...';
+        try {
+          if (state.cached) { try { await api.post('/admin/discard-file', { url: state.cached }); } catch (e) { /* ignore */ } state.cached = null; }
+          var r = await api.post('/admin/cache-file', { url: u });
+          state.cached = r.url; $$('ad-prev').href = r.url;
+          $$('ad-dl-msg').style.color = '#065F46'; $$('ad-dl-msg').textContent = 'تم التنزيل (' + Math.round(r.size / 1024) + ' ك.ب). عاينه ثم قرّر.';
+          $$('ad-choice').style.display = 'block';
+        } catch (e) { $$('ad-dl-msg').style.color = '#B91C1C'; $$('ad-dl-msg').textContent = e.message; }
+        btn.disabled = false;
+      };
+      $$('ad-ok').onclick = async function () {
+        var btn = this; btn.disabled = true; btn.textContent = 'جارٍ الحفظ...';
+        try {
+          var body = {};
+          if (mode === 'link') body[p.field] = cand.url;
+          if (hasMeta && $$('ad-title') && $$('ad-title').checked) {
+            var nt = $$('ad-title-v').value.trim(); if (nt) body[TITLEK[sec] || 'title'] = nt;
+            if ($$('ad-meta') && $$('ad-meta').checked) {
+              if (cand.doi && DOI_SECS.indexOf(sec) !== -1) body.doi = cand.doi;
+              if (abs) {
+                var text = cand.abstract.length > 1500 ? cand.abstract.slice(0, 1500).replace(/\s+\S*$/, '') + '…' : cand.abstract;
+                if ($$('ad-ai') && $$('ad-ai').checked) { try { var sr = await api.post('/admin/summarize', { items: [{ title: nt || cand.title, abstract: cand.abstract }] }); if (sr.summaries[0] && sr.summaries[0].summary) text = sr.summaries[0].summary; } catch (e) { /* نُبقي ملخص المصدر */ } }
+                body[ABSK[sec]] = text;
+              }
+            } else if ($$('ad-clear') && $$('ad-clear').checked) body[ABSK[sec]] = null;
+          } else if (hasMeta && $$('ad-clear') && $$('ad-clear').checked && $$('ad-title') && $$('ad-title').checked) body[ABSK[sec]] = null;
+          var publishFile = state.cached && document.querySelector('input[name=ad-pub]:checked') && document.querySelector('input[name=ad-pub]:checked').value === 'yes';
+          if (publishFile) body.hostedFileUrl = state.cached;
+          if (!Object.keys(body).length) { showAlert('لم تحدد شيئًا للحفظ', 'error'); btn.disabled = false; btn.textContent = 'حفظ'; return; }
+          await api.put('/' + sec + '/' + p.id, body);
+          if (state.cached && !publishFile) { try { await api.post('/admin/discard-file', { url: state.cached }); } catch (e) { /* ignore */ } }
+          state.cached = null;
+          showAlert(publishFile ? 'تم الحفظ مع نشر الملف' : 'تم الحفظ', 'success');
+          if (body[TITLEK[sec] || 'title']) p.title = body[TITLEK[sec] || 'title'];
+          if (mode === 'link') { var kk = problems.indexOf(p); if (kk !== -1) problems.splice(kk, 1); }
+          ov.remove(); render();
+        } catch (e) { btn.disabled = false; btn.textContent = 'اعتماد وحفظ'; showAlert(e.message, 'error'); }
+      };
+    }
+    async function pdfCopy(k) {
+      var p = problems[k]; if (!p) return;
+      openAdopt(p, { url: p.url, pdf: p.url, title: '' }, 'file');
     }
     var altRunning = false;
     document.getElementById('alt-all').addEventListener('click', async function () {
@@ -159,6 +245,7 @@
         if (what === 'delete') { if (!confirm('حذف هذا المرجع نهائيًا؟\n' + p.title)) return; await api.delete(path); }
         else if (what === 'remove') { if (!confirm('إزالة الرابط من هذا المرجع؟')) return; var b = {}; b[p.field] = null; await api.put(path, b); }
         else if (what === 'replace') { var u = prompt('الصق الرابط الصحيح (يبدأ بـ https://):', p.url); if (!u) return; if (!/^https?:\/\//i.test(u.trim())) { showAlert('الرابط غير صحيح', 'error'); return; } var b2 = {}; b2[p.field] = u.trim(); await api.put(path, b2); }
+        else if (what === 'title') { var nt = prompt('العنوان الجديد للمرجع:', p.title); if (!nt || !nt.trim()) return; var tb = {}; tb[TITLEK[p.section] || 'title'] = nt.trim(); await api.put(path, tb); p.title = nt.trim(); showAlert('تم تعديل العنوان', 'success'); render(); return; }
         else if (what === 'draft') { await api.put(path, p.section === 'announcements' ? { isPublished: false } : { statusDoc: 'draft' }); }
         showAlert('تم', 'success');
         if (what === 'draft') p.isDraft = true; else problems.splice(k, 1);

@@ -145,7 +145,7 @@ function noteFail(key) {
 
 const router = express.Router();
 
-router.get('/health', (req, res) => res.json({ status: 'ok', service: 'Moroccan Observatory of Legal Studies and Research API', core: !!getCoreKey() }));
+router.get('/health', (req, res) => res.json({ status: 'ok', service: 'Moroccan Observatory of Legal Studies and Research API', core: !!getCoreKey(), ai: !!process.env.AI_API_KEY, blob: !!process.env.BLOB_READ_WRITE_TOKEN }));
 
 /* ============================================================
  * إعدادات المنصة: نص «من نحن» + بريد التواصل (قابلة للتعديل من لوحة الإدارة)
@@ -454,11 +454,14 @@ function cleanData(model, body, isCreate) {
 /** إخفاء روابط الملفات عن غير المسجلين (تظهر لهم علامة hasFile فقط) */
 function shape(item, req, light) {
   const o = { ...item };
-  o.hasFile = !!(o.fileUrl || o.videoUrl);
+  o.hasFile = !!(o.fileUrl || o.videoUrl || o.hostedFileUrl);
+  o.hasHosted = !!o.hostedFileUrl;
+  o.hasOrig = !!(o.fileUrl || o.videoUrl);
   if (light) delete o.fullText;
   if (!req.user) {
     delete o.fileUrl;
     delete o.videoUrl;
+    delete o.hostedFileUrl;
     delete o.fullText;
   }
   return o;
@@ -562,12 +565,13 @@ router.get(
     const model = cfg.model;
     const item = await prisma[lowerFirst(model)].findUnique({ where: { id: req.params.id } });
     if (!item) throw httpError(404, 'المرجع غير موجود');
-    const url = item.fileUrl || item.videoUrl;
+    const which = String(req.query.which || '');
+    const url = which === 'hosted' ? item.hostedFileUrl : which === 'orig' ? (item.fileUrl || item.videoUrl) : (item.hostedFileUrl || item.fileUrl || item.videoUrl);
     if (!url) throw httpError(404, 'لا يوجد ملف مرفق بهذا المرجع بعد');
     if (hasField(model, 'downloadsCount')) {
       prisma[lowerFirst(model)].update({ where: { id: item.id }, data: { downloadsCount: { increment: 1 } } }).catch(() => {});
     }
-    res.json({ url, title: item.title || item.decisionNumber || '' });
+    res.json({ url, hostedUrl: item.hostedFileUrl || null, origUrl: item.fileUrl || item.videoUrl || null, title: item.title || item.decisionNumber || '' });
   })
 );
 
@@ -881,26 +885,41 @@ async function fetchJsonSafe(url, ms) {
 }
 const ALT_SOURCES = {
   Crossref: async (q) => {
-    const j = await fetchJsonSafe('https://api.crossref.org/works?rows=5&select=title,URL&query.bibliographic=' + q);
-    return ((j && j.message && j.message.items) || []).map((it) => ({ title: (it.title || [])[0] || '', url: it.URL || '' }));
+    const j = await fetchJsonSafe('https://api.crossref.org/works?rows=5&select=title,URL,DOI,abstract,issued&query.bibliographic=' + q);
+    return ((j && j.message && j.message.items) || []).map((it) => ({ title: (it.title || [])[0] || '', url: it.URL || '', doi: it.DOI || '', abstract: stripHtml(it.abstract), year: it.issued && it.issued['date-parts'] && it.issued['date-parts'][0] && it.issued['date-parts'][0][0] }));
   },
   OpenAlex: async (q) => {
-    const j = await fetchJsonSafe('https://api.openalex.org/works?per-page=5&search=' + q);
-    return ((j && j.results) || []).map((w) => ({ title: w.title || '', url: (w.open_access && w.open_access.oa_url) || w.doi || '' }));
+    const j = await fetchJsonSafe('https://api.openalex.org/works?per-page=5&select=title,doi,publication_year,open_access,best_oa_location,abstract_inverted_index&search=' + q);
+    return ((j && j.results) || []).map((w) => ({
+      title: w.title || '',
+      url: (w.open_access && w.open_access.oa_url) || w.doi || '',
+      pdf: (w.best_oa_location && w.best_oa_location.pdf_url) || '',
+      doi: bareDoi(w.doi), abstract: oaAbstractText(w.abstract_inverted_index), year: w.publication_year,
+    }));
   },
   Zenodo: async (q) => {
     const j = await fetchJsonSafe('https://zenodo.org/api/records?size=5&q=' + q);
-    return ((j && j.hits && j.hits.hits) || []).map((h) => ({ title: (h.metadata && h.metadata.title) || '', url: (h.links && (h.links.self_html || h.links.html)) || ('https://zenodo.org/records/' + h.id) }));
+    return ((j && j.hits && j.hits.hits) || []).map((h) => {
+      const files = Array.isArray(h.files) ? h.files : [];
+      const f = files.find((x) => /\.pdf$/i.test(x.key || x.filename || ''));
+      return {
+        title: (h.metadata && h.metadata.title) || '',
+        url: (h.links && (h.links.self_html || h.links.html)) || ('https://zenodo.org/records/' + h.id),
+        pdf: f ? 'https://zenodo.org/records/' + h.id + '/files/' + encodeURIComponent(f.key || f.filename) + '?download=1' : '',
+        doi: h.doi || (h.metadata && h.metadata.doi) || '', abstract: stripHtml(h.metadata && h.metadata.description),
+        year: h.metadata && h.metadata.publication_date ? Number(String(h.metadata.publication_date).slice(0, 4)) : null,
+      };
+    });
   },
   HAL: async (q) => {
-    const j = await fetchJsonSafe('https://api.archives-ouvertes.fr/search/?wt=json&rows=5&fl=title_s,uri_s&q=' + q);
-    return ((j && j.response && j.response.docs) || []).map((d) => ({ title: [].concat(d.title_s || [''])[0], url: d.uri_s || '' }));
+    const j = await fetchJsonSafe('https://api.archives-ouvertes.fr/search/?wt=json&rows=5&fl=title_s,uri_s,fileMain_s,doiId_s,abstract_s,producedDateY_i&q=' + q);
+    return ((j && j.response && j.response.docs) || []).map((d) => ({ title: [].concat(d.title_s || [''])[0], url: d.uri_s || '', pdf: d.fileMain_s || '', doi: d.doiId_s || '', abstract: stripHtml([].concat(d.abstract_s || [''])[0]), year: d.producedDateY_i }));
   },
   CORE: async (q) => {
     if (!getCoreKey()) return [];
     try {
       const w = await coreSearch(decodeURIComponent(q), 5);
-      return w.map((x) => ({ title: x.title || '', url: x.downloadUrl || (x.sourceFulltextUrls || [])[0] || '' }));
+      return w.map((x) => ({ title: x.title || '', url: (x.sourceFulltextUrls || [])[0] || x.downloadUrl || '', pdf: x.downloadUrl || '', doi: x.doi || '', abstract: stripHtml(x.abstract), year: x.yearPublished }));
     } catch (e) { return []; }
   },
   DOAJ: async (q) => {
@@ -908,7 +927,8 @@ const ALT_SOURCES = {
     return ((j && j.results) || []).map((r) => {
       const b = r.bibjson || {};
       const ft = (b.link || []).find((l) => l.type === 'fulltext');
-      return { title: b.title || '', url: (ft && ft.url) || '' };
+      const doi = ((b.identifier || []).find((x) => x.type === 'doi') || {}).id || '';
+      return { title: b.title || '', url: (ft && ft.url) || '', doi, abstract: stripHtml(b.abstract), year: b.year ? Number(b.year) : null };
     });
   },
 };
@@ -1238,6 +1258,59 @@ router.post(
       hasDoi: !!item.doi,
       hasAbstract: !!String(item[absKey] || '').trim(),
     });
+  })
+);
+
+/* ============================================================
+ * نسخة PDF مستضافة في المنصة (Vercel Blob): تُنزَّل للمراجعة أولاً، ولا تُربط بالمرجع إلا بعد اعتماد المدير
+ * ============================================================ */
+router.post(
+  '/admin/cache-file',
+  limit('cachefile', 60, 60 * 60 * 1000),
+  ...staffOnly,
+  ah(async (req, res) => {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) throw httpError(500, NO_BLOB);
+    const raw = String((req.body || {}).url || '').trim();
+    let u;
+    try { u = new URL(raw); } catch (e) { throw httpError(400, 'رابط غير صالح'); }
+    if (!/^https?:$/.test(u.protocol) || isPrivateHost(u.hostname)) throw httpError(400, 'رابط غير مسموح');
+    const MAX = 25 * 1024 * 1024;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 20000);
+    let buf;
+    try {
+      const r = await fetch(u.href, { redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ObservatoireFetch/1.0)', Accept: 'application/pdf,*/*' } });
+      if (!r.ok) throw httpError(502, 'تعذّر تنزيل الملف (استجابة ' + r.status + ')');
+      const len = Number(r.headers.get('content-length') || 0);
+      if (len > MAX) throw httpError(413, 'الملف أكبر من 25 ميغابايت');
+      const chunks = [];
+      let size = 0;
+      for await (const c of r.body) {
+        size += c.length;
+        if (size > MAX) throw httpError(413, 'الملف أكبر من 25 ميغابايت');
+        chunks.push(Buffer.from(c));
+      }
+      buf = Buffer.concat(chunks);
+    } catch (e) {
+      if (e.status) throw e;
+      throw httpError(502, e && e.name === 'AbortError' ? 'انتهت مهلة تنزيل الملف' : 'تعذّر تنزيل الملف من هذا الرابط');
+    } finally { clearTimeout(t); }
+    if (buf.slice(0, 5).toString('latin1') !== '%PDF-') throw httpError(422, 'هذا الرابط لا يحيل إلى ملف PDF مباشر (قد يكون صفحة ويب).');
+    const { put } = await import('@vercel/blob');
+    const name = 'hosted/' + Date.now() + '-' + crypto.randomBytes(4).toString('hex') + '.pdf';
+    const blob = await put(name, buf, { access: 'public', contentType: 'application/pdf', addRandomSuffix: true });
+    res.json({ url: blob.url, size: buf.length });
+  })
+);
+
+router.post(
+  '/admin/discard-file',
+  ...staffOnly,
+  ah(async (req, res) => {
+    const url = String((req.body || {}).url || '');
+    if (!/^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(url) || !process.env.BLOB_READ_WRITE_TOKEN) return res.json({ ok: true });
+    try { const { del } = await import('@vercel/blob'); await del(url); } catch (e) { /* ignore */ }
+    res.json({ ok: true });
   })
 );
 

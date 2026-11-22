@@ -57,6 +57,11 @@
     <div class="content">
 
       <div class="card">
+        <div class="card-header"><h2><i class="fas fa-plug"></i> حالة الخدمات</h2></div>
+        <div class="card-body" id="svc" style="line-height:2.2;font-size:.92rem">جارٍ الفحص...</div>
+      </div>
+
+      <div class="card">
         <div class="card-header"><h2><i class="fas fa-envelope"></i> بريد التواصل</h2></div>
         <div class="card-body">
           <div class="form-group" style="max-width:480px">
@@ -142,6 +147,16 @@
     });
     setRows();
     load();
+    (async function () {
+      var box = document.getElementById('svc');
+      try {
+        var h = await api.get('/health');
+        function row(ok, name, help) { return '<div>' + (ok ? '<b style="color:#065F46">✓ مفعّل</b>' : '<b style="color:#B91C1C">✗ غير مفعّل</b>') + ' — ' + name + (ok ? '' : ' <span style="color:#6B7280;font-size:.82rem">(' + help + ')</span>') + '</div>'; }
+        box.innerHTML = row(h.ai, 'المساعد الذكي وكتابة الملخصات (AI_API_KEY)', 'أضف المتغير AI_API_KEY في Vercel ثم أعد النشر') +
+          row(h.core, 'مصدر CORE للبحث (CORE_API_KEY)', 'اختياري، مفتاح مجاني من core.ac.uk') +
+          row(h.blob, 'تخزين الملفات ونسخ PDF (Vercel Blob)', 'من Vercel: Storage ثم Create Blob ثم Connect Project ثم أعد النشر');
+      } catch (e) { box.textContent = 'تعذّر فحص الخدمات: ' + e.message; }
+    })();
   </script>
 <script src="../site-config.js"></script>
 </body>

@@ -149,6 +149,19 @@ button,input{font-family:inherit}
 .hero-body>.stats{width:100%}
 /* في شاشة الحاسوب: إنزال الأزرار تحت الشعار حتى لا تلتصق به */
 @media(min-width:900px){.hero-body{padding-top:calc(46vw + 6px)}}
+.excerpt{margin:8px 0 0;font-size:.84rem;line-height:1.8;color:var(--muted)}
+.detail-bg{display:none;position:fixed;inset:0;background:rgba(6,16,42,.62);z-index:300;align-items:flex-end;justify-content:center}
+.detail-bg.show{display:flex}
+.detail-sheet{position:relative;background:#fff;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:26px 22px 28px;line-height:1.9;box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+@media(min-width:700px){.detail-bg{align-items:center}.detail-sheet{border-radius:20px}}
+.d-close{position:absolute;top:10px;left:14px;background:none;border:none;font-size:1.9rem;line-height:1;color:#6B7280;cursor:pointer}
+.d-title{margin:8px 0 4px;color:var(--royal);font-size:1.15rem;line-height:1.6}
+.d-doi{font-size:.82rem;direction:ltr;text-align:right;margin-top:4px}.d-doi a{color:var(--royal-mid)}
+.d-sum{margin-top:14px;padding:14px 16px;background:#FAF7F0;border:1px solid #EFE6CF;border-radius:12px}
+.d-sum p{margin:4px 0 0;font-size:.92rem;color:var(--text)}
+.d-kw{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.d-kw span{background:#EEF2F8;color:var(--royal);border-radius:12px;padding:2px 10px;font-size:.76rem}
+.d-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.d-note{margin:14px 0 0;font-size:.74rem;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -404,19 +417,53 @@ var VIEW={
   lectures:{ic:'fa-chalkboard-teacher',map:function(x){return {t:x.title,m:join([x.instructorName]),b:LTYPE[x.type]||'محاضرة'}}},
   announcements:{ic:'fa-bullhorn',map:function(x){return {t:x.title,m:join([x.organization,x.location,x.eventDate?String(x.eventDate).substring(0,10):'']),b:ATYPE[x.type]||'إعلان'}}}
 };
+var ABSK={laws:'summary',jurisprudence:'summary',books:'description',theses:'abstract',articles:'abstract',reports:'description',lectures:'description',announcements:'description'};
+var CACHE={};
+function excerpt(sec,x){var t=String(x[ABSK[sec]]||'').replace(/\s+/g,' ').trim();return t.length>150?t.slice(0,150).replace(/\s+\S*$/,'')+'…':t}
 function itemHTML(sec,x){
-  var v=VIEW[sec].map(x);
-  var ext=(sec==='announcements'&&x.externalLink&&/^https?:\/\//i.test(x.externalLink))?x.externalLink:'';
-  var btn='',click='';
-  if(ext){btn='<i class="fas fa-external-link-alt"></i> فتح الرابط'}
-  else if(x.hasFile){btn='<i class="fas fa-download"></i> عرض / تحميل'}
-  if(btn)click=' style="cursor:pointer" onclick="openRef(this)"';
-  return '<div class="list-item" data-sec="'+esc(sec)+'" data-id="'+esc(x.id)+'" data-ext="'+esc(ext)+'"'+click+'>'+
+  CACHE[sec+':'+x.id]=x;
+  var v=VIEW[sec].map(x),ex=excerpt(sec,x);
+  return '<div class="list-item" data-sec="'+esc(sec)+'" data-id="'+esc(x.id)+'" style="cursor:pointer" onclick="openDetail(this)">'+
     '<div class="ico"><i class="fas '+VIEW[sec].ic+'"></i></div><div style="flex:1"><h4>'+esc(v.t)+'</h4>'+
     (v.m?'<div class="meta">'+esc(v.m)+'</div>':'')+'<span class="badge">'+esc(v.b)+'</span>'+
-    (btn?'<div style="margin-top:10px"><button type="button" class="btn btn-gold" style="padding:6px 12px;font-size:.78rem" onclick="event.stopPropagation();openRef(this)">'+btn+'</button></div>':'')+
+    (ex?'<p class="excerpt">'+esc(ex)+'</p>':'')+
+    '<div style="margin-top:10px"><button type="button" class="btn btn-gold" style="padding:6px 12px;font-size:.78rem" onclick="event.stopPropagation();openDetail(this)"><i class="fas fa-info-circle"></i> التفاصيل'+((x.hasFile||x.externalLink)?' والتحميل':'')+'</button></div>'+
     '</div></div>';
 }
+/* ---------- صفحة تفاصيل المرجع (ملخص + روابط) ---------- */
+function openDetail(el){
+  var card=el.closest('.list-item');if(!card)return;
+  var sec=card.getAttribute('data-sec'),id=card.getAttribute('data-id'),x=CACHE[sec+':'+id];if(!x)return;
+  var v=VIEW[sec].map(x),sum=String(x[ABSK[sec]]||'').trim(),btns='';
+  var ext=(sec==='announcements'&&x.externalLink&&/^https?:\/\//i.test(x.externalLink))?x.externalLink:'';
+  if(ext)btns+='<a class="btn btn-gold" href="'+esc(ext)+'" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> فتح رابط الإعلان</a>';
+  if(x.hasHosted)btns+='<button type="button" class="btn btn-gold" onclick="getFile(\''+esc(sec)+'\',\''+esc(id)+'\',\'hosted\')"><i class="fas fa-file-pdf"></i> تحميل الملف (PDF)</button>';
+  if(x.hasOrig)btns+='<button type="button" class="btn '+(x.hasHosted?'btn-outline-gold':'btn-gold')+'" onclick="getFile(\''+esc(sec)+'\',\''+esc(id)+'\',\'orig\')"><i class="fas fa-external-link-alt"></i> فتح الرابط الأصلي</button>';
+  if(!btns&&!sum)btns='';
+  var kw=Array.isArray(x.keywords)&&x.keywords.length?'<div class="d-kw">'+x.keywords.slice(0,8).map(function(k){return '<span>'+esc(k)+'</span>'}).join('')+'</div>':'';
+  var doi=x.doi?'<div class="d-doi">DOI: <a href="https://doi.org/'+esc(x.doi)+'" target="_blank" rel="noopener">'+esc(x.doi)+'</a></div>':'';
+  var box=document.getElementById('detail-sheet');
+  box.innerHTML='<button type="button" class="d-close" onclick="closeDetail()" aria-label="إغلاق">&times;</button>'+
+    '<span class="badge">'+esc(v.b)+'</span><h3 class="d-title">'+esc(v.t)+'</h3>'+(v.m?'<div class="meta">'+esc(v.m)+'</div>':'')+doi+
+    '<div class="d-sum">'+(sum?'<b>ملخص</b><p>'+esc(sum).replace(/\n/g,'<br>')+'</p>':'<p style="color:var(--muted)">لا يتوفر ملخص لهذا المرجع بعد.</p>')+'</div>'+kw+
+    '<div class="d-btns">'+(btns||'<span style="color:var(--muted);font-size:.85rem">لا يوجد ملف أو رابط مرفق بهذا المرجع بعد.</span>')+'</div>'+
+    (x.hasFile?'<p class="d-note">تحميل المراجع متاح للأعضاء المسجلين. المحتوى منسوب لأصحابه ومصادره الأصلية.</p>':'');
+  document.getElementById('detail-bg').classList.add('show');document.body.style.overflow='hidden';
+}
+function closeDetail(){document.getElementById('detail-bg').classList.remove('show');document.body.style.overflow=''}
+async function getFile(sec,id,which){
+  if(!tok()){alert('تحميل المراجع متاح للأعضاء.\nسجّل الدخول أو أنشئ حساباً مجانياً أولاً.');closeDetail();show('auth');return}
+  var w=window.open('','_blank');
+  try{
+    var r=await call('GET','/files/'+sec+'/'+id+'?which='+which);
+    var u=which==='orig'?pdfLink(r.url):r.url;if(w)w.location.href=u;else location.href=u;
+  }catch(e){
+    if(w)w.close();
+    if(e.status===401){logout(true);closeDetail();alert('انتهت الجلسة، يرجى تسجيل الدخول من جديد.');show('auth')}
+    else alert(e.message);
+  }
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDetail()});
 function note(txt,bad){return '<p style="text-align:center;padding:24px 8px;color:'+(bad?'#B91C1C':'var(--muted)')+'">'+esc(txt)+'</p>'}
 async function fill(el,sec,filter){
   el.innerHTML=note('جارٍ التحميل...');
@@ -433,22 +480,6 @@ function pdfLink(u){
   try{ if(/android/i.test(navigator.userAgent)&&/\.pdf(\?|#|$)|\/pdf\/|[?&](format|type)=pdf/i.test(u)) return 'https://docs.google.com/gview?embedded=1&url='+encodeURIComponent(u); }catch(e){}
   return u;
 }
-async function openRef(el){
-  var card=el.closest('.list-item');if(!card)return;
-  var ext=card.getAttribute('data-ext');
-  if(ext){window.open(ext,'_blank','noopener');return}
-  if(!tok()){alert('تحميل المراجع متاح للأعضاء.\nسجّل الدخول أو أنشئ حساباً مجانياً أولاً.');show('auth');return}
-  var w=window.open('','_blank');
-  try{
-    var r=await call('GET','/files/'+card.getAttribute('data-sec')+'/'+card.getAttribute('data-id'));
-    var u=pdfLink(r.url);if(w)w.location.href=u;else location.href=u;
-  }catch(e){
-    if(w)w.close();
-    if(e.status===401){logout(true);alert('انتهت الجلسة، يرجى تسجيل الدخول من جديد.');show('auth')}
-    else alert(e.message);
-  }
-}
-
 /* ---------- التنقل ---------- */
 function hideAll(){document.getElementById('view-home').style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('show')})}
 function show(n){
@@ -578,5 +609,6 @@ async function sendMsg(e){
 </script>
 
 <script src="site-config.js"></script>
+<div class="detail-bg" id="detail-bg" onclick="if(event.target===this)closeDetail()"><div class="detail-sheet" id="detail-sheet"></div></div>
 </body>
 </html>

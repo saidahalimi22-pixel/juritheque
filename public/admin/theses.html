@@ -64,6 +64,7 @@
               <div class="form-group"><label>حالة النشر</label><select id="f-statusDoc"><option value="published">منشور</option><option value="draft">مسودة</option></select></div>
               <div class="form-group full"><label>الملخص</label><textarea id="f-abstract" rows="3"></textarea></div>
               <div class="form-group"><label>DOI (إن وُجد)</label><input type="text" id="f-doi" dir="ltr" placeholder="10.xxxx/xxxxx"></div>
+              <div class="form-group"><label>نسخة PDF على المنصة (رابط مخزَّن؛ احذفه لإلغاء نشر الملف)</label><input type="url" id="f-hostedFileUrl" dir="ltr"></div>
               <div class="form-group"><label>رابط الملف</label><input type="url" id="f-fileUrl"></div>
 
               <div class="form-group">
@@ -106,7 +107,7 @@
       fields: [
         { name: 'title' }, { name: 'degree', default: 'master' }, { name: 'university' },
         { name: 'faculty' }, { name: 'defenseYear', type: 'number' },
-        { name: 'statusDoc', default: 'published' }, { name: 'abstract' }, { name: 'fileUrl' }, { name: 'doi' }
+        { name: 'statusDoc', default: 'published' }, { name: 'abstract' }, { name: 'fileUrl' }, { name: 'doi' }, { name: 'hostedFileUrl' }
       ],
       columns: [
         { key: 'title' }, { key: 'degree', render: i => ({ licence: 'إجازة', master: 'ماستر / ماجستير', phd: 'دكتوراه', other: 'أخرى' })[i.degree] || i.degree }, { key: 'university' }, { key: 'defenseYear' }

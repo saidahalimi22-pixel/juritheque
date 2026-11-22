@@ -65,6 +65,7 @@
               <div class="form-group full"><label>الوصف</label><textarea id="f-description" rows="3"></textarea></div>
               <div class="form-group"><label>رابط الفيديو</label><input type="url" id="f-videoUrl"></div>
               <div class="form-group"><label>DOI (إن وُجد)</label><input type="text" id="f-doi" dir="ltr" placeholder="10.xxxx/xxxxx"></div>
+              <div class="form-group"><label>نسخة PDF على المنصة (رابط مخزَّن؛ احذفه لإلغاء نشر الملف)</label><input type="url" id="f-hostedFileUrl" dir="ltr"></div>
               <div class="form-group"><label>رابط ملف مرفق</label><input type="url" id="f-fileUrl"></div>
 
               <div class="form-group">
@@ -108,7 +109,7 @@
         { name: 'title' }, { name: 'instructorName' }, { name: 'type', default: 'lecture' },
         { name: 'durationMinutes', type: 'number' }, { name: 'isFree', default: 'true' },
         { name: 'statusDoc', default: 'published' }, { name: 'description' },
-        { name: 'videoUrl' }, { name: 'fileUrl' }, { name: 'doi' }
+        { name: 'videoUrl' }, { name: 'fileUrl' }, { name: 'doi' }, { name: 'hostedFileUrl' }
       ],
       columns: [
         { key: 'title' }, { key: 'instructorName' },
