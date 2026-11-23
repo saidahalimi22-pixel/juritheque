@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>كشف المراجع المكررة | المرصد المغربي</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .grp{border:1px solid var(--border);border-radius:10px;margin:12px 0;overflow:hidden}
+    .grp-h{background:var(--off-white);padding:8px 14px;font-size:.85rem;color:#6B7280;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+    .it{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-top:1px solid var(--border)}
+    .it .u{direction:ltr;text-align:left;word-break:break-all;font-size:.76rem;color:#6B7280;margin-top:2px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700;background:#E0F2FE;color:#075985}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="../index.html" title="الانتقال إلى الصفحة الرئيسية للموقع"><img src="../logo-emblem.png" alt="" class="brand-logo"><span>المرصد المغربي للدراسات والأبحاث القانونية</span></a>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
+      <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="enrich.html"><i class="fas fa-magic"></i> إكمال بيانات المراجع</a>
+      <a href="duplicates.html" class="active"><i class="fas fa-clone"></i> كشف المكرر</a>
+      <a href="links.html"><i class="fas fa-link"></i> فحص الروابط</a>
+      <a href="site.html"><i class="fas fa-palette"></i> تخصيص الموقع (الصور والنصوص)</a>
+      <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar"><h1>كشف المراجع المكررة</h1><div class="topbar-actions"><div class="user-info"></div></div></div>
+    <div class="content">
+      <div class="card"><div class="card-body">
+        <p style="line-height:1.9;margin:0 0 12px">تجمع الأداة المراجع التي لها <b>الرابط نفسه</b> أو <b>العنوان نفسه</b> (مع تجاهل الفروق البسيطة في الهمزات والتشكيل). في كل مجموعة اختر المرجع الذي <b>تُبقيه</b>، ثم اضغط «حذف الباقي». لا يُحذف شيء قبل تأكيدك.</p>
+        <div class="filters">
+          <select id="sec">
+            <option value="laws">القوانين</option><option value="jurisprudence">الاجتهادات</option>
+            <option value="books">الكتب</option><option value="theses">الرسائل والأطروحات</option>
+            <option value="articles">المقالات</option><option value="reports">التقارير</option><option value="lectures">المحاضرات</option>
+          </select>
+          <button class="btn btn-primary" id="go"><i class="fas fa-search"></i> ابحث عن المكرر</button>
+        </div>
+        <div id="status" style="margin-top:10px;font-size:.9rem;color:#6B7280"></div>
+      </div></div>
+      <div id="out"></div>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin', 'editor']);
+    renderUserBar();
+    var groups = [], sec = 'laws';
+    function $(i) { return document.getElementById(i); }
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function best(items) { // نقترح إبقاء: منشور ثم له ملخص ثم الأقدم
+      var s = items.slice().sort(function (a, b) { return (b.statusDoc === 'published') - (a.statusDoc === 'published') || (b.hasSummary - a.hasSummary) || String(a.createdAt).localeCompare(String(b.createdAt)); });
+      return s[0].id;
+    }
+    function render() {
+      $('out').innerHTML = groups.length ? groups.map(function (g, gi) {
+        var keep = best(g.items);
+        return '<div class="grp"><div class="grp-h"><span>مجموعة ' + (gi + 1) + ' — ' + g.items.length + ' مراجع متشابهة</span><button class="btn btn-sm btn-outline" style="color:#B91C1C" onclick="dedupe(' + gi + ')"><i class="fas fa-trash"></i> حذف الباقي وإبقاء المحدد</button></div>' +
+          g.items.map(function (it) {
+            return '<label class="it"><input type="radio" name="g' + gi + '" value="' + esc(it.id) + '"' + (it.id === keep ? ' checked' : '') + '><div><b>' + esc(it.title) + '</b> ' + (it.statusDoc === 'published' ? '<span class="pill">منشور</span>' : '<span class="pill" style="background:#FEF3C7;color:#92400E">مسودة</span>') + (it.hasSummary ? ' <span class="pill" style="background:#D1FAE5;color:#065F46">له ملخص</span>' : '') + '<div class="u">' + esc(it.fileUrl) + '</div></div></label>';
+          }).join('') + '</div>';
+      }).join('') : '<div class="card"><div class="card-body" style="text-align:center;color:#9CA3AF">لا توجد مراجع مكررة</div></div>';
+    }
+    async function dedupe(gi) {
+      var g = groups[gi], keep = document.querySelector('input[name=g' + gi + ']:checked');
+      if (!keep) return;
+      var del = g.items.filter(function (it) { return it.id !== keep.value; });
+      if (!confirm('سيُحذف ' + del.length + ' مرجعًا ويبقى المحدد فقط. متابعة؟')) return;
+      var ok = 0;
+      for (var i = 0; i < del.length; i++) { try { await api.delete('/' + sec + '/' + del[i].id); ok++; } catch (e) { /* قد يكون محذوفًا */ } }
+      groups.splice(gi, 1); showAlert('تم حذف ' + ok + ' مرجعًا', 'success'); render();
+    }
+    $('go').addEventListener('click', async function () {
+      sec = $('sec').value; $('status').textContent = 'جارٍ البحث...'; groups = []; render();
+      try { var r = await api.get('/admin/duplicates?section=' + sec); groups = r.groups; $('status').textContent = 'فُحص ' + r.total + ' مرجعًا، ووُجدت ' + groups.length + ' مجموعة مكررة.'; }
+      catch (e) { $('status').textContent = 'خطأ: ' + e.message; }
+      render();
+    });
+  </script>
+  <script src="../site-config.js"></script>
+</body>
+</html>

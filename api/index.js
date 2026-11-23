@@ -232,6 +232,8 @@ router.get(
     res.json({
       siteName: SITE_NAME,
       contactEmail: st.contactEmail || '',
+      assistantEnabled: st.assistantEnabled !== '0',
+      assistantAi: st.assistantAi === '1',
       aboutHtml: st.aboutHtml || DEFAULT_ABOUT_HTML,
       aboutIsDefault: !st.aboutHtml,
       heroVersion: st.heroVersion || '',
@@ -273,6 +275,8 @@ router.put(
       if (mail && !emailOk(mail)) throw httpError(400, 'البريد الإلكتروني غير صحيح');
       await save('contactEmail', mail);
     }
+    if (b.assistantEnabled !== undefined) await save('assistantEnabled', b.assistantEnabled ? '1' : '0');
+    if (b.assistantAi !== undefined) await save('assistantAi', b.assistantAi ? '1' : '0');
     if (b.aboutHtml !== undefined) {
       const clean = sanitizeHtml(b.aboutHtml).slice(0, 60000);
       // نص فارغ = العودة إلى النص الافتراضي
@@ -454,7 +458,8 @@ function cleanData(model, body, isCreate) {
 /** إخفاء روابط الملفات عن غير المسجلين (تظهر لهم علامة hasFile فقط) */
 function shape(item, req, light) {
   const o = { ...item };
-  o.hasFile = !!(o.fileUrl || o.videoUrl || o.hostedFileUrl);
+  o.hasFile = !!(o.fileUrl || o.videoUrl || o.hostedFileUrl || o.arFileUrl);
+  o.hasAr = !!o.arFileUrl;
   o.hasHosted = !!o.hostedFileUrl;
   o.hasOrig = !!(o.fileUrl || o.videoUrl);
   if (light) delete o.fullText;
@@ -462,6 +467,7 @@ function shape(item, req, light) {
     delete o.fileUrl;
     delete o.videoUrl;
     delete o.hostedFileUrl;
+    delete o.arFileUrl;
     delete o.fullText;
   }
   return o;
@@ -537,6 +543,8 @@ Object.keys(SECTIONS).forEach((path) => {
     ...staffOnly,
     ah(async (req, res) => {
       const data = cleanData(model, req.body, false);
+      const body = req.body || {};
+      if (hasField(model, 'linkVerified') && !('linkVerified' in body) && ['fileUrl', 'sourceUrl', 'videoUrl', 'arFileUrl'].some((k) => k in body)) data.linkVerified = false;
       res.json(await delegate().update({ where: { id: req.params.id }, data }));
     })
   );
@@ -566,7 +574,7 @@ router.get(
     const item = await prisma[lowerFirst(model)].findUnique({ where: { id: req.params.id } });
     if (!item) throw httpError(404, 'المرجع غير موجود');
     const which = String(req.query.which || '');
-    const url = which === 'hosted' ? item.hostedFileUrl : which === 'orig' ? (item.fileUrl || item.videoUrl) : (item.hostedFileUrl || item.fileUrl || item.videoUrl);
+    const url = which === 'ar' ? item.arFileUrl : which === 'hosted' ? item.hostedFileUrl : which === 'orig' ? (item.fileUrl || item.videoUrl) : (item.hostedFileUrl || item.fileUrl || item.videoUrl);
     if (!url) throw httpError(404, 'لا يوجد ملف مرفق بهذا المرجع بعد');
     if (hasField(model, 'downloadsCount')) {
       prisma[lowerFirst(model)].update({ where: { id: item.id }, data: { downloadsCount: { increment: 1 } } }).catch(() => {});
@@ -765,7 +773,7 @@ router.post(
  * فحص الروابط: يتحقق من أن روابط المراجع تعمل وأنها ليست مجرد صفحة رئيسية لموقع
  * ============================================================ */
 const LINK_FIELDS = {
-  laws: ['fileUrl', 'sourceUrl'],
+  laws: ['fileUrl', 'sourceUrl', 'arFileUrl'],
   jurisprudence: ['fileUrl', 'sourceUrl'],
   books: ['fileUrl'],
   theses: ['fileUrl'],
@@ -811,7 +819,7 @@ async function probeUrl(url) {
   }
   let state, note;
   if (r.error === 'dns') { state = 'broken'; note = 'النطاق غير موجود'; }
-  else if (r.error === 'timeout') { state = 'warn'; note = 'لم يستجب الموقع في الوقت المحدد'; }
+  else if (r.error === 'timeout') { state = 'warn'; note = 'لم يستجب الموقع للفحص الآلي (قد تحجب بعض المواقع الحكومية الفحص من خارج المغرب). افتح الرابط يدويًا، وإن كان صحيحًا وبعنوان المرجع فاضغط «✓ مؤكد»'; }
   else if (r.error) { state = 'warn'; note = 'تعذّر الاتصال بالموقع'; }
   else if (r.status === 404 || r.status === 410) { state = 'broken'; note = 'الصفحة غير موجودة (' + r.status + ')'; }
   else if (r.status >= 200 && r.status < 400) { state = 'ok'; note = ''; }
@@ -837,11 +845,14 @@ router.get(
       delegate.findMany({ orderBy: { id: 'asc' }, skip: offset, take: limit }),
     ]);
     const jobs = [];
-    items.forEach((it) => fields.forEach((f) => {
-      const url = it[f] && String(it[f]).trim();
-      if (url && /^https?:\/\//i.test(url)) jobs.push({ it, f, url });
-    }));
     const results = [];
+    items.forEach((it) => {
+      if (it.linkVerified) { results.push({ id: it.id, section, field: fields[0], url: it[fields[0]] || '', title: it.title || it.subject || it.decisionNumber || '—', isDraft: false, state: 'verified', note: 'أكّدتَ هذا الرابط يدويًا' }); return; }
+      fields.forEach((f) => {
+        const url = it[f] && String(it[f]).trim();
+        if (url && /^https?:\/\//i.test(url)) jobs.push({ it, f, url });
+      });
+    });
     let next = 0;
     const worker = async () => {
       while (next < jobs.length) {
@@ -1086,6 +1097,7 @@ router.post(
             ? { decisionNumber: data.decisionNumber, court: data.court, subject: data.subject || null }
             : { title: data.title };
           if (await delegate.findFirst({ where: key, select: { id: true } })) { out.skipped++; continue; }
+          if (data.fileUrl && (await delegate.findFirst({ where: { fileUrl: data.fileUrl }, select: { id: true } }))) { out.skipped++; continue; }
         }
         await delegate.create({ data });
         out.created++;
@@ -1315,6 +1327,41 @@ router.post(
 );
 
 /* ============================================================
+ * كشف المراجع المكررة (عنوان متطابق بعد التطبيع أو رابط ملف واحد)
+ * ============================================================ */
+router.get(
+  '/admin/duplicates',
+  ...staffOnly,
+  ah(async (req, res) => {
+    const section = String(req.query.section || '');
+    const cfg = SECTIONS[section];
+    if (!cfg || !LINK_FIELDS[section] || section === 'announcements') throw httpError(404, 'قسم غير مدعوم');
+    const tKey = section === 'jurisprudence' ? 'subject' : 'title';
+    const items = await prisma[lowerFirst(cfg.model)].findMany({ take: 3000, orderBy: { id: 'asc' } });
+    const parent = new Map();
+    const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+    const union = (x, y) => { const rx = find(x), ry = find(y); if (rx !== ry) parent.set(rx, ry); };
+    items.forEach((it) => parent.set(it.id, it.id));
+    const byKey = new Map();
+    items.forEach((it) => {
+      const keys = [];
+      const t = normTitle(it[tKey] || it.decisionNumber || '');
+      if (t.length >= 6) keys.push('t:' + t + (section === 'jurisprudence' ? '|' + normTitle(it.court || '') + '|' + (it.decisionNumber || '') : ''));
+      if (it.fileUrl) keys.push('u:' + String(it.fileUrl).trim());
+      keys.forEach((k) => { if (byKey.has(k)) union(it.id, byKey.get(k)); else byKey.set(k, it.id); });
+    });
+    const groups = new Map();
+    items.forEach((it) => { const r = find(it.id); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(it); });
+    const out = [];
+    groups.forEach((list) => {
+      if (list.length < 2) return;
+      out.push({ items: list.map((it) => ({ id: it.id, title: it[tKey] || it.decisionNumber || '—', fileUrl: it.fileUrl || '', statusDoc: it.statusDoc || (it.isPublished === false ? 'draft' : 'published'), hasSummary: !!String(it.summary || it.description || it.abstract || '').trim(), createdAt: it.createdAt || null })) });
+    });
+    res.json({ total: items.length, groups: out.slice(0, 200) });
+  })
+);
+
+/* ============================================================
  * إحصاءات لوحة التحكم
  * ============================================================ */
 router.get(
@@ -1331,48 +1378,100 @@ router.get(
 );
 
 /* ============================================================
- * المساعد الذكي (يتطلب تسجيل الدخول + مفتاح AI_API_KEY)
+ * المساعد: بحث ذكي في مراجع المنصة. العناوين والروابط تأتي من قاعدة البيانات وحدها،
+ * فلا يستطيع النموذج اختلاق أي مرجع. والذكاء الاصطناعي (اختياري) يكتب فقرة تعريفية قصيرة فقط.
  * ============================================================ */
+const AR_STOP = new Set('ما ماذا هو هي هل كيف متى أين اين من في على عن إلى الى التي الذي هذا هذه ذلك تلك أريد اريد أبحث ابحث حول بشأن لدي عندي يمكن يمكنني كل بعض مع أو او ثم قد لا لم لن كان يكون أي اي فيما بين لماذا هناك ريد معلومات مراجع موضوع'.split(' '));
+const arNorm = (s) => String(s || '').replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/[إأآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').toLowerCase();
+const ASSIST_SECS = { laws: 'summary', jurisprudence: 'summary', books: 'description', theses: 'abstract', articles: 'abstract', reports: 'description', lectures: 'description' };
+const ASSIST_TITLE = { jurisprudence: ['subject', 'decisionNumber', 'court'] };
+
+function assistTerms(q) {
+  const clean = String(q || '').replace(/[\u064B-\u065F\u0670\u0640]/g, '');
+  const words = Array.from(new Set(clean.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3 && !AR_STOP.has(w)))).slice(0, 6);
+  const variants = new Set();
+  words.forEach((w) => {
+    const bases = [w];
+    if (w.startsWith('ال') && w.length > 4) bases.push(w.slice(2));
+    bases.forEach((b) => {
+      variants.add(b);
+      const k = b.search(/[اأإ]/);
+      if (k !== -1) ['ا', 'أ', 'إ'].forEach((c) => variants.add(b.slice(0, k) + c + b.slice(k + 1)));
+    });
+  });
+  return { words, variants: Array.from(variants).slice(0, 24) };
+}
+
 router.post(
   '/assistant/ask',
   limit('assistant', 40, 60 * 60 * 1000),
-  authenticate,
+  optionalAuth,
   ah(async (req, res) => {
-    const question = String((req.body || {}).question || '').trim().slice(0, 1000);
+    const question = String((req.body || {}).question || '').trim().slice(0, 500);
     if (question.length < 3) throw httpError(400, 'اكتب سؤالك بوضوح');
-    if (!process.env.AI_API_KEY)
-      return res.json({ answer: 'المساعد الذكي غير مفعّل بعد: لم يضف مدير المنصة مفتاح الذكاء الاصطناعي.', sources: [] });
+    const st = await readSettings();
+    if (st.assistantEnabled === '0') return res.json({ answer: 'المساعد متوقف حالياً. يمكنك تصفح المكتبة القانونية والاجتهادات مباشرة.', results: [] });
 
-    const words = Array.from(new Set(question.replace(/[؟?!.,،:;()«»"']/g, ' ').split(/\s+/).filter((w) => w.length >= 3))).slice(0, 6);
-    const like = (fields) => words.flatMap((w) => fields.map((f) => ({ [f]: { contains: w, mode: 'insensitive' } })));
-    const pub = { statusDoc: 'published' };
-    const [laws, jur] = await Promise.all([
-      words.length ? prisma.law.findMany({ where: { ...pub, OR: like(['title', 'summary', 'officialNumber']) }, take: 4, select: { title: true, officialNumber: true, summary: true } }) : [],
-      words.length ? prisma.jurisprudence.findMany({ where: { ...pub, OR: like(['subject', 'summary', 'court']) }, take: 4, select: { decisionNumber: true, court: true, subject: true, summary: true } }) : [],
-    ]);
-    const sources = [
-      ...laws.map((l) => ({ type: 'قانون', title: l.title + (l.officialNumber ? ' (' + l.officialNumber + ')' : ''), text: l.summary || '' })),
-      ...jur.map((j) => ({ type: 'اجتهاد', title: (j.court || '') + ' — ' + (j.decisionNumber || ''), text: [j.subject, j.summary].filter(Boolean).join(' — ') })),
-    ];
-    const context = sources.map((s, i) => '[' + (i + 1) + '] ' + s.type + ': ' + s.title + '\n' + s.text.slice(0, 800)).join('\n\n') || '(لا توجد مصادر مطابقة في قاعدة بيانات المنصة)';
+    const { words, variants } = assistTerms(question);
+    if (!words.length) return res.json({ answer: 'اكتب موضوعك بكلمات محددة، مثل اسم قانون أو موضوع (التقادم، الكراء، المسؤولية المدنية...).', results: [] });
+    const nWords = words.map(arNorm);
 
-    const base = (process.env.AI_BASE_URL || 'https://api.x.ai/v1').replace(/\/$/, '');
-    const r = await fetch(base + '/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.AI_API_KEY },
-      body: JSON.stringify({
-        model: process.env.AI_MODEL || 'grok-3',
-        temperature: 0.2,
-        messages: [
-          { role: 'system', content: 'أنت مساعد قانوني للمرصد المغربي للدراسات والأبحاث القانونية. أجب بالعربية وباختصار اعتماداً على المصادر المرفقة فقط عند توفرها، واذكر رقم المصدر بين أقواس مربعة. إن لم تكفِ المصادر فاذكر ذلك بصراحة ولا تخترع نصوصاً أو أرقام قوانين. في النهاية نبّه أن هذا توجيه أولي لا يغني عن استشارة محامٍ.' },
-          { role: 'user', content: 'المصادر:\n' + context + '\n\nالسؤال: ' + question },
-        ],
-      }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw httpError(502, 'تعذّر الوصول لخدمة الذكاء الاصطناعي: ' + ((j.error && (j.error.message || j.error)) || r.status));
-    const answer = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || 'لم أتمكن من توليد إجابة.';
-    res.json({ answer, sources: sources.map((s) => s.type + ': ' + s.title) });
+    const found = [];
+    await Promise.all(Object.keys(ASSIST_SECS).map(async (sec) => {
+      const model = SECTIONS[sec].model;
+      const absKey = ASSIST_SECS[sec];
+      const titleKeys = ASSIST_TITLE[sec] || ['title'];
+      const fields = Array.from(new Set([...(SECTIONS[sec].search || []), ...titleKeys, absKey])).filter((f) => hasField(model, f) && MODELS[model][f].type === 'String' && !MODELS[model][f].isList);
+      const where = { OR: variants.flatMap((v) => fields.map((f) => ({ [f]: { contains: v, mode: 'insensitive' } }))) };
+      if (hasField(model, 'statusDoc')) where.statusDoc = 'published';
+      let rows = [];
+      try { rows = await prisma[lowerFirst(model)].findMany({ where, take: 25 }); } catch (e) { rows = []; }
+      rows.forEach((it) => {
+        const title = arNorm(titleKeys.map((k) => it[k]).filter(Boolean).join(' '));
+        const body = arNorm([it[absKey], (it.keywords || []).join(' '), it.journalName, it.university, it.publisher, it.court].filter(Boolean).join(' '));
+        let score = 0, matched = 0;
+        nWords.forEach((w) => {
+          const stem = w.startsWith('ال') && w.length > 4 ? w.slice(2) : w;
+          if (title.includes(stem)) { score += 3; matched++; } else if (body.includes(stem)) { score += 1; matched++; }
+        });
+        if (matched >= (words.length >= 3 ? 2 : 1)) found.push({ sec, it, score });
+      });
+    }));
+    found.sort((x, y) => y.score - x.score);
+    const top = found.slice(0, 8);
+    const results = top.map((r) => ({ sec: r.sec, item: shape(r.it, req, true) }));
+
+    if (!results.length)
+      return res.json({ answer: 'لم أجد في المنصة مراجع تطابق سؤالك. جرّب كلمات أخرى (اسم القانون أو موضوعه بدقة)، أو أرسل طلب استشارة عبر نموذج الاستشارة.', results: [] });
+
+    let answer = 'وجدتُ ' + results.length + ' مرجعاً في المنصة يتعلق بسؤالك. اضغط على أي مرجع لقراءة ملخصه وفتحه.';
+    // شرح تعريفي قصير بالذكاء الاصطناعي (اختياري)، يُرفض إذا ذكر رقماً أو رابطاً غير موجود في النتائج
+    if (st.assistantAi === '1' && process.env.AI_API_KEY) {
+      const ctx = top.map((r, i) => '[' + (i + 1) + '] ' + String(r.it.title || r.it.subject || '') + ' — ' + stripHtml(r.it[ASSIST_SECS[r.sec]]).slice(0, 400)).join('\n');
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 15000);
+      try {
+        const base = (process.env.AI_BASE_URL || 'https://api.x.ai/v1').replace(/\/$/, '');
+        const r = await fetch(base + '/chat/completions', {
+          method: 'POST', signal: ctrl.signal,
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.AI_API_KEY },
+          body: JSON.stringify({
+            model: process.env.AI_MODEL || 'grok-3', temperature: 0,
+            messages: [
+              { role: 'system', content: 'لديك قائمة مراجع مرقمة من قاعدة بيانات منصة قانونية. اكتب بالعربية فقرة تعريفية من جملتين أو ثلاث تبيّن ما تتناوله هذه المراجع بحسب العناوين والملخصات المرفقة فقط، وأشر إلى المرجع برقمه بين قوسين مربعين. ممنوع منعاً باتاً: ذكر أي عنوان أو رابط أو رقم أو تاريخ أو اسم محكمة غير وارد حرفياً في القائمة، وممنوع تقديم نصيحة قانونية أو معلومة من خارج القائمة.' },
+              { role: 'user', content: 'المراجع:\n' + ctx + '\n\nسؤال الزائر: ' + question },
+            ],
+          }),
+        });
+        const j = await r.json().catch(() => ({}));
+        let text = stripHtml((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '');
+        const allowed = arNorm(ctx).replace(/[^0-9]+/g, ' ').split(' ').filter(Boolean);
+        const used = text.replace(/\[\d+\]/g, ' ').replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660)).match(/\d+/g) || [];
+        const bad = /https?:\/\/|www\./i.test(text) || used.some((n) => !allowed.includes(n));
+        if (r.ok && text.length > 20 && !bad) answer += '\n\n' + text.slice(0, 900);
+      } catch (e) { /* نكتفي بالنتائج */ } finally { clearTimeout(t); }
+    }
+    res.json({ answer, results });
   })
 );
 

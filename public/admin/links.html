@@ -45,6 +45,7 @@
       <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
       <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
       <a href="enrich.html"><i class="fas fa-magic"></i> إكمال بيانات المراجع</a>
+      <a href="duplicates.html"><i class="fas fa-clone"></i> كشف المكرر</a>
       <a href="links.html" class="active"><i class="fas fa-link"></i> فحص الروابط</a>
       <a href="site.html"><i class="fas fa-palette"></i> تخصيص الموقع (الصور والنصوص)</a>
       <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
@@ -58,6 +59,7 @@
       <div class="card">
         <div class="card-body">
           <p style="line-height:1.9;margin:0 0 12px">تفحص هذه الأداة روابط المراجع وتعرض لك ما يلزم إصلاحه: <b>الروابط المعطوبة (404)</b> و<b>الروابط التي تحيل إلى الصفحة الرئيسية لموقع</b> بدل المرجع المباشر، و<b>روابط يصعب التأكد منها</b>. يستغرق الفحص بضع دقائق، فاترك الصفحة مفتوحة.</p>
+          <p style="line-height:1.9;margin:0 0 12px;color:#6B7280;font-size:.88rem"><b>«غير مؤكد»</b> لا يعني أن العنوان لا يطابق الرابط، بل أن الفحص الآلي لم يستطع الوصول إلى الموقع (مواقع حكومية كثيرة تحجب الفحص من خارج المغرب). افتح الرابط بنفسك، وإن كان صحيحًا وبعنوان المرجع فاضغط <b>«✓ مؤكد»</b>، فيخرج من القائمة ولا يُفحص مجددًا ما لم تغيّر رابطه.</p>
           <div class="filters">
             <select id="sec">
               <option value="all">كل الأقسام</option>
@@ -77,11 +79,12 @@
       </div>
       <div class="card">
         <div class="card-header"><h2>الروابط التي تحتاج إلى مراجعة</h2>
-          <select id="show" style="padding:6px"><option value="">الكل</option><option value="broken">المعطوبة</option><option value="generic">رئيسية فقط</option><option value="warn">غير مؤكدة</option></select>
+          <button class="btn btn-sm btn-outline" id="verify-sel" style="margin-right:10px"><i class="fas fa-check"></i> ✓ تأكيد المحدد</button>
+          <select id="show" style="padding:6px"><option value="">الكل</option><option value="broken">المعطوبة</option><option value="generic">رئيسية فقط</option><option value="warn">غير مؤكدة</option><option value="verified">المؤكدة يدويًا</option></select>
         </div>
         <div style="overflow-x:auto">
-          <table><thead><tr><th>المرجع</th><th>القسم</th><th>المشكلة</th><th>الرابط</th><th>إجراءات</th></tr></thead>
-          <tbody id="res"><tr><td colspan="5" style="text-align:center;color:#9CA3AF">لم يبدأ الفحص بعد</td></tr></tbody></table>
+          <table><thead><tr><th></th><th>المرجع</th><th>القسم</th><th>المشكلة</th><th>الرابط</th><th>إجراءات</th></tr></thead>
+          <tbody id="res"><tr><td colspan="6" style="text-align:center;color:#9CA3AF">لم يبدأ الفحص بعد</td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -92,17 +95,24 @@
     renderUserBar();
     var SEC = { laws: 'القوانين', jurisprudence: 'الاجتهادات', books: 'الكتب', theses: 'الأطروحات', articles: 'المقالات', reports: 'التقارير', lectures: 'المحاضرات', announcements: 'الإعلانات' };
     var LBL = { broken: 'معطوب', generic: 'رابط رئيسي', warn: 'غير مؤكد' };
-    var problems = [], running = false, counts = { checked: 0, ok: 0 };
+    var problems = [], verifiedList = [], running = false, counts = { checked: 0, ok: 0 };
+    var LBL_V = 'مؤكد';
+    function gone(e) { return /غير موجود|not found/i.test(String(e && e.message)); }
     function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     function render() {
       var f = document.getElementById('show').value;
-      var rows = problems.filter(function (p) { return !f || p.state === f; });
+      var rows = f === 'verified' ? verifiedList : problems.filter(function (p) { return !f || p.state === f; });
       document.getElementById('res').innerHTML = rows.length ? rows.map(function (p, i) {
+        if (f === 'verified') {
+          var vk = verifiedList.indexOf(p);
+          return '<tr><td></td><td>' + esc(p.title) + '</td><td>' + SEC[p.section] + '</td><td><span class="pill" style="background:#D1FAE5;color:#065F46">✓ مؤكد</span></td><td class="url"><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url) + '</a></td><td><button class="btn btn-sm btn-outline" onclick="act(' + vk + ',\'unverify\')">إلغاء التأكيد</button></td></tr>';
+        }
         var k = problems.indexOf(p);
-        return '<tr data-k="' + k + '"><td>' + esc(p.title) + (p.isDraft ? ' <span class="pill warn">مسودة</span>' : '') + '</td><td>' + SEC[p.section] + '</td>' +
+        return '<tr data-k="' + k + '"><td><input type="checkbox" class="vsel" data-k="' + k + '"></td><td>' + esc(p.title) + (p.isDraft ? ' <span class="pill warn">مسودة</span>' : '') + '</td><td>' + SEC[p.section] + '</td>' +
           '<td><span class="pill ' + p.state + '">' + LBL[p.state] + '</span><div style="font-size:.78rem;color:#6B7280;margin-top:4px">' + esc(p.note) + '</div>' + sugHtml(p, k) + '</td>' +
           '<td class="url"><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.url) + '</a></td>' +
           '<td><div class="row-actions">' +
+          '<button class="btn btn-sm btn-primary" style="background:#065F46" onclick="act(' + k + ',\'verify\')">✓ مؤكد</button>' +
           '<button class="btn btn-sm btn-outline" onclick="findAlt(' + k + ')"' + (p.sugLoading ? ' disabled' : '') + '><i class="fas fa-search"></i> ' + (p.sugLoading ? 'جارٍ البحث...' : 'ابحث عن بديل') + '</button>' +
           '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'replace\')">استبدال الرابط</button>' +
           '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'title\')">تعديل العنوان</button>' +
@@ -111,10 +121,10 @@
           (p.isDraft ? '' : '<button class="btn btn-sm btn-outline" onclick="act(' + k + ',\'draft\')">تحويل لمسودة</button>') +
           '<button class="btn btn-sm btn-outline" style="color:#EF4444" onclick="act(' + k + ',\'delete\')"><i class="fas fa-trash"></i></button>' +
           '</div></td></tr>';
-      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#9CA3AF">' + (running ? 'جارٍ الفحص...' : 'لا توجد روابط تحتاج مراجعة') + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" style="text-align:center;color:#9CA3AF">' + (running ? 'جارٍ الفحص...' : 'لا توجد روابط تحتاج مراجعة') + '</td></tr>';
       var c = { broken: 0, generic: 0, warn: 0 };
       problems.forEach(function (p) { c[p.state]++; });
-      document.getElementById('stats').innerHTML = '<span>تم فحص: <b>' + counts.checked + '</b></span><span>سليمة: <b>' + counts.ok + '</b></span><span style="color:#B91C1C">معطوبة: <b>' + c.broken + '</b></span><span style="color:#92400E">رئيسية فقط: <b>' + c.generic + '</b></span><span style="color:#075985">غير مؤكدة: <b>' + c.warn + '</b></span>';
+      document.getElementById('stats').innerHTML = '<span>تم فحص: <b>' + counts.checked + '</b></span><span>سليمة: <b>' + counts.ok + '</b></span><span style="color:#B91C1C">معطوبة: <b>' + c.broken + '</b></span><span style="color:#92400E">رئيسية فقط: <b>' + c.generic + '</b></span><span style="color:#075985">غير مؤكدة: <b>' + c.warn + '</b></span><span style="color:#065F46">مؤكدة يدويًا: <b>' + verifiedList.length + '</b></span>';
     }
     var VERD = { confirmed: ['المرجع موجود على الإنترنت (تطابق عالٍ في العنوان)', 'sug'], possible: ['يوجد مرجع مشابه، تأكد من أنه هو نفسه قبل الاعتماد', 'sug'], not_found: ['لم يُعثر على مرجع مطابق في المصادر المفتوحة. قد يكون غير مفهرس، أو عنوانه غير دقيق، فراجعه يدوياً', 'sug none'], no_title: ['عنوان المرجع قصير جداً للبحث', 'sug none'], error: ['تعذّر البحث الآن، أعد المحاولة', 'sug none'] };
     function sugHtml(p, k) {
@@ -211,6 +221,7 @@
           } else if (hasMeta && $$('ad-clear') && $$('ad-clear').checked && $$('ad-title') && $$('ad-title').checked) body[ABSK[sec]] = null;
           var publishFile = state.cached && document.querySelector('input[name=ad-pub]:checked') && document.querySelector('input[name=ad-pub]:checked').value === 'yes';
           if (publishFile) body.hostedFileUrl = state.cached;
+          if (mode === 'link' && body[TITLEK[sec] || 'title']) body.linkVerified = true;
           if (!Object.keys(body).length) { showAlert('لم تحدد شيئًا للحفظ', 'error'); btn.disabled = false; btn.textContent = 'حفظ'; return; }
           await api.put('/' + sec + '/' + p.id, body);
           if (state.cached && !publishFile) { try { await api.post('/admin/discard-file', { url: state.cached }); } catch (e) { /* ignore */ } }
@@ -219,7 +230,7 @@
           if (body[TITLEK[sec] || 'title']) p.title = body[TITLEK[sec] || 'title'];
           if (mode === 'link') { var kk = problems.indexOf(p); if (kk !== -1) problems.splice(kk, 1); }
           ov.remove(); render();
-        } catch (e) { btn.disabled = false; btn.textContent = 'اعتماد وحفظ'; showAlert(e.message, 'error'); }
+        } catch (e) { btn.disabled = false; btn.textContent = 'اعتماد وحفظ'; if (gone(e)) { var gi2 = problems.indexOf(p); if (gi2 !== -1) problems.splice(gi2, 1); ov.remove(); showAlert('هذا المرجع لم يعد موجودًا (ربما حذفتَه سابقًا). أُزيل من القائمة.', 'error'); render(); } else showAlert(e.message, 'error'); }
       };
     }
     async function pdfCopy(k) {
@@ -240,17 +251,23 @@
       altRunning = false; btn.innerHTML = old;
     });
     async function act(k, what) {
-      var p = problems[k], path = '/' + p.section + '/' + p.id;
+      var list = what === 'unverify' ? verifiedList : problems;
+      var p = list[k], path = '/' + p.section + '/' + p.id;
       try {
         if (what === 'delete') { if (!confirm('حذف هذا المرجع نهائيًا؟\n' + p.title)) return; await api.delete(path); }
         else if (what === 'remove') { if (!confirm('إزالة الرابط من هذا المرجع؟')) return; var b = {}; b[p.field] = null; await api.put(path, b); }
         else if (what === 'replace') { var u = prompt('الصق الرابط الصحيح (يبدأ بـ https://):', p.url); if (!u) return; if (!/^https?:\/\//i.test(u.trim())) { showAlert('الرابط غير صحيح', 'error'); return; } var b2 = {}; b2[p.field] = u.trim(); await api.put(path, b2); }
+        else if (what === 'verify') { await api.put(path, { linkVerified: true }); p.state = 'verified'; verifiedList.push(p); problems.splice(k, 1); showAlert('تم تأكيد الرابط', 'success'); render(); return; }
+        else if (what === 'unverify') { await api.put(path, { linkVerified: false }); verifiedList.splice(k, 1); showAlert('أُلغي التأكيد، سيُفحص الرابط في الفحص القادم', 'success'); render(); return; }
         else if (what === 'title') { var nt = prompt('العنوان الجديد للمرجع:', p.title); if (!nt || !nt.trim()) return; var tb = {}; tb[TITLEK[p.section] || 'title'] = nt.trim(); await api.put(path, tb); p.title = nt.trim(); showAlert('تم تعديل العنوان', 'success'); render(); return; }
         else if (what === 'draft') { await api.put(path, p.section === 'announcements' ? { isPublished: false } : { statusDoc: 'draft' }); }
         showAlert('تم', 'success');
         if (what === 'draft') p.isDraft = true; else problems.splice(k, 1);
         render();
-      } catch (e) { showAlert(e.message, 'error'); }
+      } catch (e) {
+        if (gone(e)) { var gi = list.indexOf(p); if (gi !== -1) list.splice(gi, 1); showAlert('هذا المرجع لم يعد موجودًا (ربما حذفتَه سابقًا). أُزيل من القائمة.', 'error'); render(); }
+        else showAlert(e.message, 'error');
+      }
     }
     async function checkSection(sec, secIndex, secCount) {
       var offset = 0;
@@ -258,7 +275,7 @@
         var r;
         try { r = await api.get('/admin/check-links?section=' + sec + '&offset=' + offset + '&limit=8'); }
         catch (e) { document.getElementById('status').textContent = 'خطأ: ' + e.message; running = false; return; }
-        r.results.forEach(function (x) { counts.checked++; if (x.state === 'ok') counts.ok++; else problems.push(x); });
+        r.results.forEach(function (x) { counts.checked++; if (x.state === 'ok') counts.ok++; else if (x.state === 'verified') verifiedList.push(x); else problems.push(x); });
         offset = r.nextOffset;
         var done = (secIndex + (r.nextOffset === null ? 1 : (r.offset + r.checked) / Math.max(1, r.total))) / secCount;
         document.getElementById('prog').style.width = Math.round(done * 100) + '%';
@@ -270,12 +287,24 @@
       if (running) return;
       var v = document.getElementById('sec').value;
       var list = v === 'all' ? Object.keys(SEC) : [v];
-      problems = []; counts = { checked: 0, ok: 0 }; running = true;
+      problems = []; verifiedList = []; counts = { checked: 0, ok: 0 }; running = true;
       this.style.display = 'none'; document.getElementById('stop').style.display = '';
       for (var i = 0; i < list.length && running; i++) await checkSection(list[i], i, list.length);
       document.getElementById('status').textContent = running ? 'اكتمل الفحص' : 'توقف الفحص';
       document.getElementById('prog').style.width = running ? '100%' : document.getElementById('prog').style.width;
       running = false; this.style.display = ''; document.getElementById('stop').style.display = 'none'; render();
+    });
+    document.getElementById('verify-sel').addEventListener('click', async function () {
+      var ks = [];
+      document.querySelectorAll('.vsel:checked').forEach(function (c) { ks.push(+c.getAttribute('data-k')); });
+      if (!ks.length) { showAlert('حدّد المراجع أولًا', 'error'); return; }
+      if (!confirm('تأكيد ' + ks.length + ' مرجعًا؟ (تأكدتَ أن الرابط يعمل ويطابق العنوان)')) return;
+      var picked = ks.map(function (k) { return problems[k]; }), ok = 0;
+      for (var n = 0; n < picked.length; n++) {
+        var p = picked[n];
+        try { await api.put('/' + p.section + '/' + p.id, { linkVerified: true }); p.state = 'verified'; verifiedList.push(p); problems.splice(problems.indexOf(p), 1); ok++; } catch (e) { if (gone(e)) problems.splice(problems.indexOf(p), 1); }
+      }
+      showAlert('تم تأكيد ' + ok + ' مرجعًا', 'success'); render();
     });
     document.getElementById('stop').addEventListener('click', function () { running = false; });
     document.getElementById('show').addEventListener('change', render);

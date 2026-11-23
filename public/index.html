@@ -149,6 +149,7 @@ button,input{font-family:inherit}
 .hero-body>.stats{width:100%}
 /* في شاشة الحاسوب: إنزال الأزرار تحت الشعار حتى لا تلتصق به */
 @media(min-width:900px){.hero-body{padding-top:calc(46vw + 6px)}}
+.chat-results{padding:4px 2px}.chat-results .list-item{margin:8px 0}
 .excerpt{margin:8px 0 0;font-size:.84rem;line-height:1.8;color:var(--muted)}
 .detail-bg{display:none;position:fixed;inset:0;background:rgba(6,16,42,.62);z-index:300;align-items:flex-end;justify-content:center}
 .detail-bg.show{display:flex}
@@ -293,8 +294,8 @@ button,input{font-family:inherit}
 <div class="panel" id="view-assistant">
   <div class="panel-bar"><button class="back" onclick="goHome()"><i class="fas fa-arrow-right"></i></button><h2>المساعد الذكي</h2></div>
   <div class="chat">
-    <div class="chat-head"><div class="av"><i class="fas fa-balance-scale"></i></div><div><strong>المساعد القانوني</strong><div style="font-size:.75rem;opacity:.8">للأعضاء المسجلين</div></div></div>
-    <div class="chat-log" id="chat-log"><div class="bubble bot">مرحباً بك في المساعد القانوني للمرصد المغربي للدراسات والأبحاث القانونية. كيف يمكنني مساعدتك؟</div></div>
+    <div class="chat-head"><div class="av"><i class="fas fa-balance-scale"></i></div><div><strong>المساعد القانوني</strong><div style="font-size:.75rem;opacity:.8">بحث في مراجع المنصة</div></div></div>
+    <div class="chat-log" id="chat-log"><div class="bubble bot">مرحباً بك. اكتب موضوعك (مثل: التقادم، عقد الكراء، المسؤولية المدنية...) وسأعرض لك المراجع المتوفرة في المنصة. لا أعرض إلا ما هو موجود فيها فعلاً، بعناوينها وروابطها الأصلية.</div></div>
     <form class="chat-input" onsubmit="return sendMsg(event)">
       <input id="chat-in" placeholder="اكتب سؤالك القانوني...">
       <button type="submit"><i class="fas fa-paper-plane"></i></button>
@@ -437,8 +438,9 @@ function openDetail(el){
   var v=VIEW[sec].map(x),sum=String(x[ABSK[sec]]||'').trim(),btns='';
   var ext=(sec==='announcements'&&x.externalLink&&/^https?:\/\//i.test(x.externalLink))?x.externalLink:'';
   if(ext)btns+='<a class="btn btn-gold" href="'+esc(ext)+'" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> فتح رابط الإعلان</a>';
+  if(x.hasAr)btns+='<button type="button" class="btn btn-gold" onclick="getFile(\''+esc(sec)+'\',\''+esc(id)+'\',\'ar\')"><i class="fas fa-file-pdf"></i> النسخة العربية</button>';
   if(x.hasHosted)btns+='<button type="button" class="btn btn-gold" onclick="getFile(\''+esc(sec)+'\',\''+esc(id)+'\',\'hosted\')"><i class="fas fa-file-pdf"></i> تحميل الملف (PDF)</button>';
-  if(x.hasOrig)btns+='<button type="button" class="btn '+(x.hasHosted?'btn-outline-gold':'btn-gold')+'" onclick="getFile(\''+esc(sec)+'\',\''+esc(id)+'\',\'orig\')"><i class="fas fa-external-link-alt"></i> فتح الرابط الأصلي</button>';
+  if(x.hasOrig)btns+='<button type="button" class="btn '+(x.hasHosted?'btn-outline-gold':'btn-gold')+'" onclick="getFile(\''+esc(sec)+'\',\''+esc(id)+'\',\'orig\')"><i class="fas fa-external-link-alt"></i> '+(x.hasAr?'النسخة الأصلية (الفرنسية)':'فتح الرابط الأصلي')+'</button>';
   if(!btns&&!sum)btns='';
   var kw=Array.isArray(x.keywords)&&x.keywords.length?'<div class="d-kw">'+x.keywords.slice(0,8).map(function(k){return '<span>'+esc(k)+'</span>'}).join('')+'</div>':'';
   var doi=x.doi?'<div class="d-doi">DOI: <a href="https://doi.org/'+esc(x.doi)+'" target="_blank" rel="noopener">'+esc(x.doi)+'</a></div>':'';
@@ -456,7 +458,7 @@ async function getFile(sec,id,which){
   var w=window.open('','_blank');
   try{
     var r=await call('GET','/files/'+sec+'/'+id+'?which='+which);
-    var u=which==='orig'?pdfLink(r.url):r.url;if(w)w.location.href=u;else location.href=u;
+    var u=(which==='orig'||which==='ar')?pdfLink(r.url):r.url;if(w)w.location.href=u;else location.href=u;
   }catch(e){
     if(w)w.close();
     if(e.status===401){logout(true);closeDetail();alert('انتهت الجلسة، يرجى تسجيل الدخول من جديد.');show('auth')}
@@ -556,6 +558,7 @@ async function loadSettings(){
   try{
     var s=await call('GET','/settings');
     var el=document.getElementById('about-content');if(el&&s.aboutHtml)el.innerHTML=s.aboutHtml;
+    if(!s.assistantEnabled){document.querySelectorAll('[onclick*="show(\'assistant\')"]').forEach(function(e){e.style.display='none'})}
     var box=document.getElementById('contact-mail-box'),foot=document.getElementById('footer-mail');
     if(s.contactEmail){
       var m=esc(s.contactEmail);
@@ -597,11 +600,16 @@ async function sendMsg(e){
   e.preventDefault();
   var input=document.getElementById('chat-in'),q=input.value.trim();if(!q)return false;
   bubble('user',q);input.value='';
-  if(!tok()){bubble('bot','سجّل الدخول أولاً لاستخدام المساعد الذكي.');return false}
-  var wait=bubble('bot','جارٍ البحث في المصادر...');
+  var wait=bubble('bot','جارٍ البحث في مراجع المنصة...');
   try{
     var r=await call('POST','/assistant/ask',{question:q});
-    wait.textContent=r.answer+((r.sources&&r.sources.length)?'\n\nالمصادر:\n- '+r.sources.join('\n- '):'');
+    wait.textContent=r.answer;
+    if(r.results&&r.results.length){
+      var box=document.createElement('div');box.className='chat-results';
+      box.innerHTML=r.results.map(function(x){return itemHTML(x.sec,x.item)}).join('');
+      document.getElementById('chat-log').appendChild(box);
+      bubble('bot','هذا توجيه أولي من مراجع المنصة ولا يغني عن استشارة محامٍ.');
+    }
   }catch(err){wait.textContent=err.message}
   document.getElementById('chat-log').scrollTop=1e6;
   return false;
