@@ -1228,6 +1228,60 @@ function oaAbstractText(ix) {
 }
 const bareDoi = (d) => String(d || '').replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').trim();
 
+/* حقول تُملأ من بيانات الرابط/المصادر (الخانات الفارغة فقط) */
+const FILL = {
+  articles: { journalName: 'venue', volume: 'volume', issue: 'issue', pages: 'pages', publicationYear: 'year', keywords: 'keywords' },
+  theses: { university: 'institution', defenseYear: 'year', keywords: 'keywords' },
+  books: { publisher: 'publisher', publicationYear: 'year', isbn: 'isbn' },
+  reports: { issuingBody: 'publisher', publicationDate: 'date' },
+  lectures: { instructorName: 'author' },
+};
+const isEmptyVal = (v) => v == null || v === '' || (Array.isArray(v) && !v.length);
+const ENT = { eacute: 'é', egrave: 'è', ecirc: 'ê', euml: 'ë', agrave: 'à', acirc: 'â', ccedil: 'ç', icirc: 'î', iuml: 'ï', ocirc: 'ô', ugrave: 'ù', ucirc: 'û', Eacute: 'É', laquo: '«', raquo: '»', rsquo: '’', lsquo: '‘', ndash: '–', mdash: '—', hellip: '…' };
+const decodeEnt = (s) => String(s || '').replace(/&([A-Za-z]+);/g, (m, n) => ENT[n] || m).replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&#(\d+);/g, (m, n) => String.fromCharCode(Number(n)));
+
+/** يقرأ وسوم الوصف (citation_*, DC.*, og:*) من صفحة الرابط إن كانت صفحة ويب */
+async function pageMeta(url) {
+  let u;
+  try { u = new URL(url); } catch (e) { return null; }
+  if (!/^https?:$/.test(u.protocol) || isPrivateHost(u.hostname) || /\.(pdf|docx?|pptx?|xlsx?|zip|rar)(\?|#|$)/i.test(u.pathname)) return null;
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 6000);
+  try {
+    const r = await fetch(u.href, { redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ObservatoireMeta/1.0)', Accept: 'text/html' } });
+    if (!r.ok || !/html/i.test(r.headers.get('content-type') || '')) return null;
+    let html = '', size = 0;
+    for await (const c of r.body) { html += Buffer.from(c).toString('utf8'); size += c.length; if (size > 300000) break; }
+    const m = {};
+    (html.match(/<meta\b[^>]*>/gi) || []).forEach((tag) => {
+      const nm = /(?:name|property)\s*=\s*["']([^"']+)["']/i.exec(tag);
+      const ct = /content\s*=\s*"([^"]*)"|content\s*=\s*'([^']*)'/i.exec(tag);
+      if (nm && ct) (m[nm[1].toLowerCase()] ||= []).push(decodeEnt(ct[1] != null ? ct[1] : ct[2]).trim());
+    });
+    const first = (...keys) => { for (const k of keys) if (m[k] && m[k][0]) return m[k][0]; return ''; };
+    const all = (...keys) => { for (const k of keys) if (m[k] && m[k].length) return m[k]; return []; };
+    const tt = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
+    const date = first('citation_publication_date', 'citation_date', 'citation_online_date', 'dc.date', 'dc.date.issued', 'article:published_time');
+    const yr = (/(19|20)\d{2}/.exec(date) || [])[0];
+    const kwRaw = all('citation_keywords', 'dc.subject', 'keywords').join(';');
+    const fp = first('citation_firstpage'), lp = first('citation_lastpage');
+    return {
+      title: first('citation_title', 'dc.title', 'og:title') || (tt ? decodeEnt(tt[1]).replace(/\s+/g, ' ').trim() : ''),
+      author: all('citation_author', 'dc.creator', 'author').slice(0, 4).join('، '),
+      venue: first('citation_journal_title', 'prism.publicationname'),
+      publisher: first('citation_publisher', 'dc.publisher'),
+      institution: first('citation_dissertation_institution', 'citation_technical_report_institution'),
+      volume: first('citation_volume'), issue: first('citation_issue'),
+      pages: fp ? (lp && lp !== fp ? fp + '-' + lp : fp) : '',
+      year: yr ? Number(yr) : null, date: yr ? yr + '-01-01' : '',
+      doi: bareDoi(first('citation_doi', 'dc.identifier.doi')),
+      isbn: first('citation_isbn'),
+      keywords: kwRaw.split(/[;,،]/).map((s) => s.trim()).filter((s) => s && s.length < 60).slice(0, 8),
+      abstract: stripHtml(first('citation_abstract', 'dc.description', 'og:description', 'description')),
+    };
+  } catch (e) { return null; } finally { clearTimeout(t); }
+}
+
 router.post(
   '/admin/enrich-lookup',
   limit('enrich', 600, 60 * 60 * 1000),
@@ -1239,125 +1293,112 @@ router.post(
     const item = await prisma[lowerFirst(SECTIONS[section].model)].findUnique({ where: { id: String((req.body || {}).id || '') } });
     if (!item) throw httpError(404, 'المرجع غير موجود');
     const title = String(item.title || '').replace(/\s+/g, ' ').trim();
-    if (title.length < 8) return res.json({ found: false, reason: 'العنوان قصير جداً للبحث' });
     const year = item.publicationYear || item.defenseYear || (item.publicationDate ? new Date(item.publicationDate).getUTCFullYear() : null);
     const q = encodeURIComponent(title.slice(0, 250));
-    const [oa, cr, hal] = await Promise.all([
-      fetchJsonSafe('https://api.openalex.org/works?per-page=5&select=title,doi,publication_year,abstract_inverted_index&search=' + q, 7000),
-      fetchJsonSafe('https://api.crossref.org/works?rows=5&select=title,DOI,abstract,issued&query.bibliographic=' + q, 7000),
-      fetchJsonSafe('https://api.archives-ouvertes.fr/search/?q=' + q + '&fl=title_s,doiId_s,abstract_s,producedDateY_i&rows=5&wt=json', 7000),
+    const [oa, cr, hal, pm] = await Promise.all([
+      title.length >= 8 ? fetchJsonSafe('https://api.openalex.org/works?per-page=5&select=title,doi,publication_year,abstract_inverted_index,primary_location,biblio&search=' + q, 7000) : null,
+      title.length >= 8 ? fetchJsonSafe('https://api.crossref.org/works?rows=5&select=title,DOI,abstract,issued,container-title,volume,issue,page,publisher&query.bibliographic=' + q, 7000) : null,
+      title.length >= 8 ? fetchJsonSafe('https://api.archives-ouvertes.fr/search/?q=' + q + '&fl=title_s,doiId_s,abstract_s,producedDateY_i&rows=5&wt=json', 7000) : null,
+      item.fileUrl ? pageMeta(item.fileUrl) : null,
     ]);
     const cands = [];
-    ((oa && oa.results) || []).forEach((w) => cands.push({ src: 'OpenAlex', title: w.title || '', doi: bareDoi(w.doi), year: w.publication_year, abstract: oaAbstractText(w.abstract_inverted_index) }));
-    ((cr && cr.message && cr.message.items) || []).forEach((w) => cands.push({ src: 'Crossref', title: (w.title || [])[0] || '', doi: w.DOI || '', year: w.issued && w.issued['date-parts'] && w.issued['date-parts'][0] && w.issued['date-parts'][0][0], abstract: stripHtml(w.abstract) }));
+    ((oa && oa.results) || []).forEach((w) => {
+      const b = w.biblio || {};
+      cands.push({ src: 'OpenAlex', title: w.title || '', doi: bareDoi(w.doi), year: w.publication_year, abstract: oaAbstractText(w.abstract_inverted_index), venue: w.primary_location && w.primary_location.source && w.primary_location.source.display_name, volume: b.volume, issue: b.issue, pages: b.first_page ? (b.last_page && b.last_page !== b.first_page ? b.first_page + '-' + b.last_page : b.first_page) : '' });
+    });
+    ((cr && cr.message && cr.message.items) || []).forEach((w) => cands.push({ src: 'Crossref', title: (w.title || [])[0] || '', doi: w.DOI || '', year: w.issued && w.issued['date-parts'] && w.issued['date-parts'][0] && w.issued['date-parts'][0][0], abstract: stripHtml(w.abstract), venue: (w['container-title'] || [])[0], volume: w.volume, issue: w.issue, pages: w.page, publisher: w.publisher }));
     ((hal && hal.response && hal.response.docs) || []).forEach((w) => cands.push({ src: 'HAL', title: [].concat(w.title_s || [''])[0], doi: w.doiId_s || '', year: w.producedDateY_i, abstract: stripHtml([].concat(w.abstract_s || [''])[0]) }));
     cands.forEach((c) => {
       c.score = titleSimilarity(title, c.title);
       if (year && c.year && Math.abs(Number(c.year) - Number(year)) > 2) c.score -= 0.25;
     });
     const good = cands.filter((c) => c.score >= 0.7).sort((x, y) => y.score - x.score);
-    if (!good.length) return res.json({ found: false, reason: 'لم يُعثر على مرجع مطابق للعنوان' });
+    const best = good[0] || null;
+    // بيانات الصفحة التي يحيل عليها الرابط، ونسبة تطابق عنوانها مع عنوان المرجع
+    const pageScore = pm && pm.title ? Math.round(titleSimilarity(title, pm.title) * 100) : null;
+    const trustPage = pm && (pageScore == null || pageScore >= 50);
+    const meta = {};
+    if (best) Object.assign(meta, { venue: best.venue, volume: best.volume, issue: best.issue, pages: best.pages, publisher: best.publisher, year: best.year });
+    if (trustPage) Object.keys(pm).forEach((k) => { if (!isEmptyVal(pm[k]) && k !== 'title' && k !== 'abstract' && k !== 'doi') meta[k] = pm[k]; });
+    const fields = {};
+    Object.entries(FILL[section] || {}).forEach(([f, key]) => {
+      let v = meta[key];
+      if (isEmptyVal(v) || !isEmptyVal(item[f])) return;
+      if (f === 'publicationYear' || f === 'defenseYear') v = parseInt(v, 10) || null;
+      if (v != null && v !== '') fields[f] = v;
+    });
     const withDoi = good.find((c) => c.doi);
     const withAbs = good.find((c) => c.abstract && c.abstract.length >= 40);
-    const best = good[0];
+    const doi = (withDoi && withDoi.doi) || (trustPage && pm.doi) || '';
+    const abstract = (withAbs && withAbs.abstract) || (trustPage && pm.abstract && pm.abstract.length >= 80 ? pm.abstract : '');
     res.json({
-      found: true,
-      matchedTitle: best.title,
-      score: Math.round(best.score * 100),
-      source: best.src,
-      doi: withDoi ? withDoi.doi : '',
-      abstract: withAbs ? withAbs.abstract.slice(0, 2500) : '',
-      hasDoi: !!item.doi,
-      hasAbstract: !!String(item[absKey] || '').trim(),
+      found: !!(best || Object.keys(fields).length || (trustPage && (pm.doi || (pm.abstract && pm.abstract.length >= 80)))),
+      matchedTitle: best ? best.title : '', score: best ? Math.round(best.score * 100) : 0, source: best ? best.src : (pm ? 'صفحة الرابط' : ''),
+      doi, abstract: String(abstract || '').slice(0, 2500), fields,
+      pageTitle: pm ? pm.title : '', pageScore,
+      hasDoi: !!item.doi, hasAbstract: !!String(item[absKey] || '').trim(),
     });
   })
 );
 
 /* ============================================================
- * نسخة PDF مستضافة في المنصة (Vercel Blob): تُنزَّل للمراجعة أولاً، ولا تُربط بالمرجع إلا بعد اعتماد المدير
+ * مراجعة الأقسام: اقتراح نقل المراجع الموضوعة في قسم غير مناسب (بحسب الكلمات الدالة)
  * ============================================================ */
-router.post(
-  '/admin/cache-file',
-  limit('cachefile', 60, 60 * 60 * 1000),
-  ...staffOnly,
-  ah(async (req, res) => {
-    if (!process.env.BLOB_READ_WRITE_TOKEN) throw httpError(500, NO_BLOB);
-    const raw = String((req.body || {}).url || '').trim();
-    let u;
-    try { u = new URL(raw); } catch (e) { throw httpError(400, 'رابط غير صالح'); }
-    if (!/^https?:$/.test(u.protocol) || isPrivateHost(u.hostname)) throw httpError(400, 'رابط غير مسموح');
-    const MAX = 25 * 1024 * 1024;
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 20000);
-    let buf;
-    try {
-      const r = await fetch(u.href, { redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ObservatoireFetch/1.0)', Accept: 'application/pdf,*/*' } });
-      if (!r.ok) throw httpError(502, 'تعذّر تنزيل الملف (استجابة ' + r.status + ')');
-      const len = Number(r.headers.get('content-length') || 0);
-      if (len > MAX) throw httpError(413, 'الملف أكبر من 25 ميغابايت');
-      const chunks = [];
-      let size = 0;
-      for await (const c of r.body) {
-        size += c.length;
-        if (size > MAX) throw httpError(413, 'الملف أكبر من 25 ميغابايت');
-        chunks.push(Buffer.from(c));
-      }
-      buf = Buffer.concat(chunks);
-    } catch (e) {
-      if (e.status) throw e;
-      throw httpError(502, e && e.name === 'AbortError' ? 'انتهت مهلة تنزيل الملف' : 'تعذّر تنزيل الملف من هذا الرابط');
-    } finally { clearTimeout(t); }
-    if (buf.slice(0, 5).toString('latin1') !== '%PDF-') throw httpError(422, 'هذا الرابط لا يحيل إلى ملف PDF مباشر (قد يكون صفحة ويب).');
-    const { put } = await import('@vercel/blob');
-    const name = 'hosted/' + Date.now() + '-' + crypto.randomBytes(4).toString('hex') + '.pdf';
-    const blob = await put(name, buf, { access: 'public', contentType: 'application/pdf', addRandomSuffix: true });
-    res.json({ url: blob.url, size: buf.length });
-  })
-);
+const CLS = {
+  theses: [[/اطروحه|رساله\s*(دكتوراه|ماستر|ماجستير|جامعيه|الاجازه|التخرج)|مذكره\s*(ماستر|التخرج)|\bth[eè]se\b|m[eé]moire\s*(de|du)|dissertation|\bthesis\b|\bph\.?d\b/i, 4, 'العنوان يدل على رسالة/أطروحة'], [/(theses|tel\.archives|dspace|toubkal|etheses|memoire)/i, 2, 'الرابط من مستودع رسائل جامعية', 'url']],
+  lectures: [[/محاضره|محاضرات|دروس|(?:^|\s)درس(?:\s|$)|دوره\s*تكوينيه|ورشه|\bcours\b|polycopi|\blecture\b|support de cours|webinaire|\bslides?\b/i, 3, 'العنوان يدل على محاضرة/درس'], [/\.(pptx?|odp)(\?|#|$)/i, 4, 'الملف عرض تقديمي', 'url']],
+  reports: [[/تقرير|\brapport\b|\breport\b|annual report/i, 3, 'العنوان يدل على تقرير']],
+  books: [[/\bisbn\b|دار\s*النشر|الطبعه\s*(الاولي|الثانيه|الثالثه)|\bmanuel\b|\btrait[eé]\b|\bouvrage\b/i, 3, 'يتضمن ما يدل على كتاب (ISBN/طبعة/دار نشر)'], [/^كتاب\s/i, 2, 'العنوان يبدأ بكلمة كتاب']],
+  articles: [[/\bdoi\b|المجلد|\bvol\.?\s*\d|\bjournal\b|\brevue\b|مجله\s*(الحقوق|القانون|العلوم)/i, 2, 'يتضمن ما يدل على مقال في مجلة']],
+  jurisprudence: [[/قرار\s*(عدد|رقم)|حكم\s*(عدد|رقم)|\barr[eê]t\s*n|\bjugement\s*n/i, 4, 'العنوان يدل على قرار/حكم قضائي']],
+  laws: [[/^(ظهير|القانون\s*رقم|قانون\s*رقم|مرسوم|dahir|loi\s*n|d[eé]cret)/i, 4, 'العنوان يبدأ بما يدل على نص تشريعي']],
+};
+function guessSection(item, current) {
+  const norm = (s) => normTitle(s);
+  const titleTxt = norm(item.title || item.subject || item.decisionNumber || '');
+  const extra = norm([item.summary, item.description, item.abstract, item.journalName, item.university, item.publisher].filter(Boolean).join(' ')).slice(0, 400);
+  const url = String(item.fileUrl || '');
+  const scores = {};
+  const why = {};
+  Object.entries(CLS).forEach(([sec, rules]) => {
+    rules.forEach(([re, w, label, where]) => {
+      const hit = where === 'url' ? re.test(url) : (re.test(titleTxt) ? true : (w <= 2 && re.test(extra)) ? true : false);
+      if (hit) { scores[sec] = (scores[sec] || 0) + w; (why[sec] ||= []).push(label); }
+    });
+  });
+  if (item.journalName) { scores.articles = (scores.articles || 0) + 2; (why.articles ||= []).push('له مجلة محددة'); }
+  if (item.isbn) { scores.books = (scores.books || 0) + 3; (why.books ||= []).push('له ISBN'); }
+  if (item.university && current !== 'theses') { scores.theses = (scores.theses || 0) + 2; (why.theses ||= []).push('له جامعة محددة'); }
+  const cur = scores[current] || 0;
+  let bestSec = null, bestScore = 0;
+  Object.entries(scores).forEach(([sec, sc]) => { if (sec !== current && sc > bestScore) { bestSec = sec; bestScore = sc; } });
+  if (!bestSec || bestScore < 3 || bestScore < cur + 2) return null;
+  return { to: bestSec, score: bestScore, reason: (why[bestSec] || []).join('، ') };
+}
 
-router.post(
-  '/admin/discard-file',
-  ...staffOnly,
-  ah(async (req, res) => {
-    const url = String((req.body || {}).url || '');
-    if (!/^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\//i.test(url) || !process.env.BLOB_READ_WRITE_TOKEN) return res.json({ ok: true });
-    try { const { del } = await import('@vercel/blob'); await del(url); } catch (e) { /* ignore */ }
-    res.json({ ok: true });
-  })
-);
-
-/* ============================================================
- * كشف المراجع المكررة (عنوان متطابق بعد التطبيع أو رابط ملف واحد)
- * ============================================================ */
 router.get(
-  '/admin/duplicates',
+  '/admin/classify-scan',
   ...staffOnly,
   ah(async (req, res) => {
     const section = String(req.query.section || '');
-    const cfg = SECTIONS[section];
-    if (!cfg || !LINK_FIELDS[section] || section === 'announcements') throw httpError(404, 'قسم غير مدعوم');
-    const tKey = section === 'jurisprudence' ? 'subject' : 'title';
-    const items = await prisma[lowerFirst(cfg.model)].findMany({ take: 3000, orderBy: { id: 'asc' } });
-    const parent = new Map();
-    const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
-    const union = (x, y) => { const rx = find(x), ry = find(y); if (rx !== ry) parent.set(rx, ry); };
-    items.forEach((it) => parent.set(it.id, it.id));
-    const byKey = new Map();
-    items.forEach((it) => {
-      const keys = [];
-      const t = normTitle(it[tKey] || it.decisionNumber || '');
-      if (t.length >= 6) keys.push('t:' + t + (section === 'jurisprudence' ? '|' + normTitle(it.court || '') + '|' + (it.decisionNumber || '') : ''));
-      if (it.fileUrl) keys.push('u:' + String(it.fileUrl).trim());
-      keys.forEach((k) => { if (byKey.has(k)) union(it.id, byKey.get(k)); else byKey.set(k, it.id); });
-    });
-    const groups = new Map();
-    items.forEach((it) => { const r = find(it.id); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(it); });
+    if (!MOVE_MAP[section]) throw httpError(404, 'قسم غير مدعوم');
+    const items = await prisma[lowerFirst(SECTIONS[section].model)].findMany({ take: 3000, orderBy: { id: 'asc' } });
     const out = [];
-    groups.forEach((list) => {
-      if (list.length < 2) return;
-      out.push({ items: list.map((it) => ({ id: it.id, title: it[tKey] || it.decisionNumber || '—', fileUrl: it.fileUrl || '', statusDoc: it.statusDoc || (it.isPublished === false ? 'draft' : 'published'), hasSummary: !!String(it.summary || it.description || it.abstract || '').trim(), createdAt: it.createdAt || null })) });
+    items.forEach((it) => {
+      const g = guessSection(it, section);
+      if (g) out.push({ id: it.id, title: it.title || it.subject || it.decisionNumber || '—', from: section, to: g.to, score: g.score, reason: g.reason, fileUrl: it.fileUrl || '' });
     });
-    res.json({ total: items.length, groups: out.slice(0, 200) });
+    res.json({ total: items.length, suggestions: out.sort((a, b) => b.score - a.score).slice(0, 300) });
+  })
+);
+
+/* تعيين «مفتوح الوصول» لكل المقالات دفعة واحدة (للمدير فقط) */
+router.post(
+  '/admin/bulk-open-access',
+  ...adminOnly,
+  ah(async (req, res) => {
+    const r = await prisma.article.updateMany({ where: { isOpenAccess: !((req.body || {}).value) }, data: { isOpenAccess: !!(req.body || {}).value } });
+    res.json({ ok: true, updated: r.count });
   })
 );
 

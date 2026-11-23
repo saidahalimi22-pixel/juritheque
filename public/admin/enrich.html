@@ -38,6 +38,7 @@
       <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
       <a href="enrich.html" class="active"><i class="fas fa-magic"></i> إكمال بيانات المراجع</a>
       <a href="duplicates.html"><i class="fas fa-clone"></i> كشف المكرر</a>
+      <a href="classify.html"><i class="fas fa-random"></i> مراجعة الأقسام</a>
       <a href="links.html"><i class="fas fa-link"></i> فحص الروابط</a>
       <a href="site.html"><i class="fas fa-palette"></i> تخصيص الموقع (الصور والنصوص)</a>
       <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
@@ -61,6 +62,7 @@
             <button class="btn btn-outline" id="stop" style="display:none"><i class="fas fa-stop"></i> إيقاف</button>
           </div>
           <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="ai" checked> اكتب ملخصًا عربيًا موجزًا بالذكاء الاصطناعي اعتمادًا على ملخص المصدر فقط (إن لم يُفعَّل المساعد الذكي يُستعمل ملخص المصدر كما هو)</label>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="allitems"> افحص كل المراجع حتى المكتملة (للتحقق من أن عنوان كل مرجع يطابق الصفحة التي يحيل عليها رابطه؛ أبطأ)</label>
           <div class="bar"><div id="prog"></div></div>
           <div id="status" style="font-size:.9rem;color:#6B7280"></div>
           <div class="stats" id="stats"></div>
@@ -72,8 +74,8 @@
           <div><button class="btn btn-sm btn-outline" id="all">تحديد الكل</button> <button class="btn btn-sm btn-outline" id="none">إلغاء التحديد</button> <button class="btn btn-sm btn-outline" id="strong">تحديد التطابق القوي فقط (90%+)</button></div>
         </div>
         <div style="overflow-x:auto">
-          <table><thead><tr><th></th><th>المرجع</th><th>DOI المقترح</th><th>الملخص المقترح (يمكنك تعديله)</th><th>المطابقة</th></tr></thead>
-          <tbody id="res"><tr><td colspan="5" style="text-align:center;color:#9CA3AF">لم يبدأ البحث بعد</td></tr></tbody></table>
+          <table><thead><tr><th></th><th>المرجع</th><th>DOI المقترح</th><th>الملخص المقترح (يمكنك تعديله)</th><th>حقول أخرى مقترحة</th><th>المطابقة</th></tr></thead>
+          <tbody id="res"><tr><td colspan="6" style="text-align:center;color:#9CA3AF">لم يبدأ البحث بعد</td></tr></tbody></table>
         </div>
         <div class="card-body"><button class="btn btn-primary" id="apply"><i class="fas fa-check"></i> تطبيق المقترحات المحددة</button> <span id="amsg" style="margin-right:10px"></span></div>
       </div>
@@ -84,6 +86,11 @@
     requireAuth(['admin', 'editor']);
     renderUserBar();
     var ABS = { articles: 'abstract', theses: 'abstract', books: 'description', reports: 'description', lectures: 'description' };
+    var FILLKEYS = { articles: ['journalName', 'volume', 'issue', 'pages', 'publicationYear', 'keywords'], theses: ['university', 'defenseYear', 'keywords'], books: ['publisher', 'publicationYear', 'isbn'], reports: ['issuingBody', 'publicationDate'], lectures: ['instructorName'] };
+    var FLBL = { journalName: 'المجلة', volume: 'المجلد', issue: 'العدد', pages: 'الصفحات', publicationYear: 'السنة', keywords: 'الكلمات المفتاحية', university: 'الجامعة', defenseYear: 'سنة المناقشة', publisher: 'الناشر', isbn: 'ISBN', issuingBody: 'الجهة المصدرة', publicationDate: 'تاريخ النشر', instructorName: 'المحاضر' };
+    var TITLEK = {};
+    function fval(v) { return Array.isArray(v) ? v.join('، ') : String(v); }
+    function isEmpty(v) { return v == null || v === '' || (Array.isArray(v) && !v.length); }
     var rows = [], running = false, st = { scanned: 0, missing: 0, found: 0, nf: 0 };
     function $(i) { return document.getElementById(i); }
     function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -93,12 +100,15 @@
     }
     function render() {
       $('res').innerHTML = rows.length ? rows.map(function (r, i) {
-        return '<tr><td><input type="checkbox" data-i="' + i + '"' + (r.score >= 80 ? ' checked' : '') + '></td>' +
-          '<td style="min-width:200px"><b>' + esc(r.item.title) + '</b><div style="font-size:.76rem;color:#6B7280;margin-top:4px">طابق: ' + esc(r.matchedTitle) + ' (' + esc(r.source) + ')</div></td>' +
+        var fl = Object.keys(r.fields || {}).map(function (f) { return '<label style="display:block;font-size:.8rem"><input type="checkbox" data-f="' + i + '|' + f + '" checked> <b>' + (FLBL[f] || f) + ':</b> ' + esc(fval(r.fields[f])) + '</label>'; }).join('');
+        var warn = r.pageTitleBad ? '<div style="margin-top:6px;font-size:.78rem;background:#FEF3C7;border-radius:6px;padding:6px 8px">⚠ عنوان الصفحة التي يحيل عليها الرابط مختلف: <b>' + esc(r.pageTitle) + '</b><label style="display:block;margin-top:4px"><input type="checkbox" data-t="' + i + '"> اعتماد عنوان الصفحة عنوانًا للمرجع</label></div>' : '';
+        return '<tr><td><input type="checkbox" data-i="' + i + '"' + (r.score >= 80 || (!r.score && !r.pageTitleBad) ? ' checked' : '') + '></td>' +
+          '<td style="min-width:200px"><b>' + esc(r.item.title) + '</b><div style="font-size:.76rem;color:#6B7280;margin-top:4px">' + (r.matchedTitle ? 'طابق: ' + esc(r.matchedTitle) + ' (' + esc(r.source) + ')' : 'المصدر: ' + esc(r.source || '—')) + '</div>' + warn + '</td>' +
           '<td class="doi">' + (r.needDoi && r.doi ? '<a href="https://doi.org/' + esc(r.doi) + '" target="_blank" rel="noopener">' + esc(r.doi) + '</a>' : '<span style="color:#9CA3AF">' + (r.item.doi ? 'موجود أصلًا' : '—') + '</span>') + '</td>' +
           '<td>' + (r.needAbs && r.abstract ? '<textarea rows="4" data-a="' + i + '">' + esc(r.summary || r.abstract) + '</textarea>' : '<span style="color:#9CA3AF">' + (r.needAbs ? '—' : 'موجود أصلًا') + '</span>') + '</td>' +
-          '<td><span class="pct' + (r.score < 85 ? ' mid' : '') + '">' + r.score + '%</span></td></tr>';
-      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#9CA3AF">' + (running ? 'جارٍ البحث...' : 'لا توجد مقترحات') + '</td></tr>';
+          '<td style="min-width:200px">' + (fl || '<span style="color:#9CA3AF">—</span>') + '</td>' +
+          '<td>' + (r.score ? '<span class="pct' + (r.score < 85 ? ' mid' : '') + '">' + r.score + '%</span>' : '<span style="color:#9CA3AF">—</span>') + (r.pageScore != null ? '<div style="font-size:.72rem;color:#6B7280;margin-top:3px">الصفحة: ' + r.pageScore + '%</div>' : '') + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" style="text-align:center;color:#9CA3AF">' + (running ? 'جارٍ البحث...' : 'لا توجد مقترحات') + '</td></tr>';
       stats();
     }
     async function scan() {
@@ -108,7 +118,7 @@
       while (page <= pages && running) {
         var r = await api.get('/' + sec + '?limit=100&page=' + page);
         pages = (r.meta && r.meta.totalPages) || 1;
-        (r.data || []).forEach(function (it) { if (!it.doi || !String(it[key] || '').trim()) items.push(it); });
+        (r.data || []).forEach(function (it) { var missing = !it.doi || !String(it[key] || '').trim() || (FILLKEYS[sec] || []).some(function (f) { return isEmpty(it[f]); }); if (missing || $('allitems').checked) items.push(it); });
         st.scanned += (r.data || []).length; page++;
       }
       st.missing = items.length; stats();
@@ -118,8 +128,9 @@
           var it = items[next++];
           try {
             var l = await api.post('/admin/enrich-lookup', { section: sec, id: it.id });
-            if (l.found && ((!it.doi && l.doi) || (!String(it[key] || '').trim() && l.abstract))) {
-              rows.push({ item: it, matchedTitle: l.matchedTitle, source: l.source, score: l.score, doi: l.doi, abstract: l.abstract, needDoi: !it.doi, needAbs: !String(it[key] || '').trim(), summary: '' });
+            var needDoi = !it.doi && l.doi, needAbs = !String(it[key] || '').trim() && l.abstract, hasF = l.fields && Object.keys(l.fields).length, bad = l.pageScore != null && l.pageScore < 50 && l.pageTitle;
+            if (l.found && (needDoi || needAbs || hasF) || bad) {
+              rows.push({ item: it, matchedTitle: l.matchedTitle, source: l.source, score: l.score, doi: l.doi, abstract: l.abstract, fields: l.fields || {}, pageTitle: l.pageTitle, pageScore: l.pageScore, pageTitleBad: !!bad, needDoi: !it.doi, needAbs: !String(it[key] || '').trim(), summary: '' });
               st.found++;
             } else st.nf++;
           } catch (e) { st.nf++; }
@@ -164,6 +175,9 @@
       for (var n = 0; n < picks.length; n++) {
         var i = picks[n], r = rows[i], body = {};
         if (r.needDoi && r.doi) body.doi = r.doi;
+        document.querySelectorAll('input[data-f^="' + i + '|"]:checked').forEach(function (c) { var f = c.getAttribute('data-f').split('|')[1]; body[f] = r.fields[f]; });
+        var tcb = document.querySelector('input[data-t="' + i + '"]:checked');
+        if (tcb && r.pageTitle) body[sec === 'jurisprudence' ? 'subject' : 'title'] = r.pageTitle;
         var ta = document.querySelector('textarea[data-a="' + i + '"]');
         var text = ta ? ta.value.trim() : '';
         if (r.needAbs && text) body[key] = text;

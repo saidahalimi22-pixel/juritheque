@@ -195,6 +195,17 @@ document.addEventListener('DOMContentLoaded', function () {
       sel.addEventListener('change', function () { if (searchBtn) searchBtn.click(); });
     }
     var user = api.getUser && api.getUser();
+    if (SECTION === 'articles' && user && user.role === 'admin') {
+      var oa = document.createElement('button');
+      oa.type = 'button'; oa.className = 'btn btn-outline';
+      oa.innerHTML = '<i class="fas fa-lock-open"></i> تعيين الكل «مفتوح الوصول»';
+      oa.addEventListener('click', async function () {
+        if (!confirm('سيُعلَّم كل المقالات بأنها «مفتوحة الوصول». افعل هذا فقط إذا كانت مقالاتك متاحة للقراء مجانًا بشكل قانوني. متابعة؟')) return;
+        try { var r = await api.post('/admin/bulk-open-access', { value: true }); showAlert('تم تحديث ' + r.updated + ' مقالًا', 'success'); if (searchBtn) searchBtn.click(); }
+        catch (e) { showAlert(e.message, 'error'); }
+      });
+      box.appendChild(oa);
+    }
     if (user && user.role === 'admin') {
       var pb = document.createElement('button');
       pb.type = 'button';

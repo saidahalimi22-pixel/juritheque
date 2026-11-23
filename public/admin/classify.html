@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مراجعة الأقسام | المرصد المغربي</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>.u{direction:ltr;text-align:left;word-break:break-all;font-size:.74rem;color:#6B7280}</style>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="../index.html" title="الانتقال إلى الصفحة الرئيسية للموقع"><img src="../logo-emblem.png" alt="" class="brand-logo"><span>المرصد المغربي للدراسات والأبحاث القانونية</span></a>
+    <nav class="sidebar-nav">
+      <a href="index.html"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a>
+      <div class="sidebar-section">المحتوى</div>
+      <a href="laws.html"><i class="fas fa-balance-scale"></i> مدونة القوانين</a>
+      <a href="jurisprudence.html"><i class="fas fa-gavel"></i> الاجتهادات القضائية</a>
+      <a href="books.html"><i class="fas fa-book"></i> الكتب</a>
+      <a href="theses.html"><i class="fas fa-graduation-cap"></i> الرسائل والأطروحات</a>
+      <a href="articles.html"><i class="fas fa-newspaper"></i> المقالات</a>
+      <a href="reports.html"><i class="fas fa-file-alt"></i> التقارير</a>
+      <a href="lectures.html"><i class="fas fa-chalkboard-teacher"></i> المحاضرات</a>
+      <a href="announcements.html"><i class="fas fa-bullhorn"></i> الإعلانات</a>
+      <div class="sidebar-section">النظام</div>
+      <a href="categories.html"><i class="fas fa-folder"></i> التصنيفات</a>
+      <a href="consultations.html"><i class="fas fa-comments"></i> طلبات الاستشارة</a>
+      <a href="import.html"><i class="fas fa-file-excel"></i> استيراد من Excel</a>
+      <a href="discover.html"><i class="fas fa-search-plus"></i> اكتشاف مراجع مفتوحة</a>
+      <a href="enrich.html"><i class="fas fa-magic"></i> إكمال بيانات المراجع</a>
+      <a href="duplicates.html"><i class="fas fa-clone"></i> كشف المكرر</a>
+      <a href="classify.html" class="active"><i class="fas fa-random"></i> مراجعة الأقسام</a>
+      <a href="links.html"><i class="fas fa-link"></i> فحص الروابط</a>
+      <a href="site.html"><i class="fas fa-palette"></i> تخصيص الموقع (الصور والنصوص)</a>
+      <a href="settings.html"><i class="fas fa-sliders-h"></i> إعدادات المنصة (من نحن / التواصل)</a>
+      <a href="users.html"><i class="fas fa-users"></i> المستخدمون</a>
+      <a href="../index.html"><i class="fas fa-external-link-alt"></i> عرض الموقع</a>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="topbar"><h1>مراجعة الأقسام</h1><div class="topbar-actions"><div class="user-info"></div></div></div>
+    <div class="content">
+      <div class="card"><div class="card-body">
+        <p style="line-height:1.9;margin:0 0 12px">تفحص الأداة عناوين المراجع وبياناتها، وتقترح نقل ما يبدو موضوعًا في قسم غير مناسب (رسالة جامعية في المقالات، محاضرة في المقالات، تقرير في الكتب...). الاقتراحات <b>تقديرية بحسب الكلمات الدالة</b>، فراجع كل سطر: يمكنك تغيير القسم المقترح أو إلغاء تحديده. لا يُنقل شيء قبل أن تضغط «نقل المحدد».</p>
+        <div class="filters">
+          <select id="sec">
+            <option value="all">كل الأقسام</option>
+            <option value="laws">القوانين</option><option value="jurisprudence">الاجتهادات</option>
+            <option value="books">الكتب</option><option value="theses">الرسائل والأطروحات</option>
+            <option value="articles">المقالات</option><option value="reports">التقارير</option><option value="lectures">المحاضرات</option>
+          </select>
+          <button class="btn btn-primary" id="go"><i class="fas fa-search"></i> افحص</button>
+        </div>
+        <div id="status" style="margin-top:10px;font-size:.9rem;color:#6B7280"></div>
+      </div></div>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table><thead><tr><th></th><th>المرجع</th><th>القسم الحالي</th><th>القسم المقترح</th><th>السبب</th></tr></thead>
+          <tbody id="res"><tr><td colspan="5" style="text-align:center;color:#9CA3AF">لم يبدأ الفحص بعد</td></tr></tbody></table>
+        </div>
+        <div class="card-body"><button class="btn btn-primary" id="apply"><i class="fas fa-exchange-alt"></i> نقل المحدد</button> <span id="amsg" style="margin-right:10px"></span></div>
+      </div>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script>
+    requireAuth(['admin']);
+    renderUserBar();
+    var NAMES = MOVE_SECTIONS, rows = [];
+    function $(i) { return document.getElementById(i); }
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function render() {
+      $('res').innerHTML = rows.length ? rows.map(function (r, i) {
+        var opts = Object.keys(NAMES).filter(function (k) { return k !== r.from; }).map(function (k) { return '<option value="' + k + '"' + (k === r.to ? ' selected' : '') + '>' + NAMES[k] + '</option>'; }).join('');
+        return '<tr><td><input type="checkbox" data-i="' + i + '"' + (r.score >= 4 ? ' checked' : '') + '></td><td><b>' + esc(r.title) + '</b><div class="u">' + esc(r.fileUrl) + '</div></td><td>' + NAMES[r.from] + '</td><td><select data-to="' + i + '">' + opts + '</select></td><td style="font-size:.82rem;color:#6B7280">' + esc(r.reason) + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#9CA3AF">لا توجد اقتراحات نقل</td></tr>';
+    }
+    $('go').addEventListener('click', async function () {
+      var v = $('sec').value, list = v === 'all' ? Object.keys(NAMES) : [v];
+      rows = []; render(); var total = 0;
+      for (var i = 0; i < list.length; i++) {
+        $('status').textContent = 'جارٍ فحص ' + NAMES[list[i]] + '...';
+        try { var r = await api.get('/admin/classify-scan?section=' + list[i]); total += r.total; rows = rows.concat(r.suggestions); render(); }
+        catch (e) { $('status').textContent = 'خطأ: ' + e.message; return; }
+      }
+      $('status').textContent = 'فُحص ' + total + ' مرجعًا، واقتُرح نقل ' + rows.length + '.';
+    });
+    $('apply').addEventListener('click', async function () {
+      var picks = [];
+      document.querySelectorAll('#res input[type=checkbox]:checked').forEach(function (c) { picks.push(+c.getAttribute('data-i')); });
+      if (!picks.length) { $('amsg').textContent = 'لم تحدد شيئًا'; return; }
+      if (!confirm('سيُنقل ' + picks.length + ' مرجعًا إلى الأقسام المحددة. قد تُفقد بعض الحقول الخاصة بالقسم القديم. متابعة؟')) return;
+      var ok = 0, fail = 0, btn = this; btn.disabled = true;
+      for (var n = 0; n < picks.length; n++) {
+        var i = picks[n], r = rows[i], to = document.querySelector('select[data-to="' + i + '"]').value;
+        $('amsg').textContent = 'جارٍ النقل... ' + (n + 1) + ' / ' + picks.length;
+        try { await api.post('/admin/move', { from: r.from, id: r.id, to: to }); ok++; r.done = true; } catch (e) { fail++; }
+      }
+      rows = rows.filter(function (r) { return !r.done; }); render();
+      $('amsg').innerHTML = '<span style="color:#065F46">نُقل ' + ok + ' مرجعًا</span>' + (fail ? ' <span style="color:#B91C1C">— تعذّر ' + fail + '</span>' : '');
+      btn.disabled = false;
+    });
+  </script>
+  <script src="../site-config.js"></script>
+</body>
+</html>
